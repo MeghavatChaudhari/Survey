@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:survey/common_widgets/custom_widgets.dart';
-import 'package:survey/screens/survey_screen.dart';
+import 'package:survey/screens/household_nonfinancial_screen/survey_screen.dart';
 import 'package:survey/databse_services/save_user.dart';
 import 'package:random_string/random_string.dart';
 
@@ -12,8 +12,7 @@ class DetailScreen extends StatelessWidget {
   final _contactController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  final DatabaseService _databaseService =
-      DatabaseService(); // Instantiate the service
+  final DatabaseService _databaseService = DatabaseService();
 
   @override
   Widget build(BuildContext context) {
@@ -75,13 +74,13 @@ class DetailScreen extends StatelessWidget {
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
                       String id = randomAlphaNumeric(10);
-                      // Use the DatabaseService to add the user
+
                       await _databaseService.addUser(
                         _nameController.text,
                         _contactController.text,
                         id,
                       );
-                      Get.to(() => SurveyScreen());
+                      Get.to(() => SurveyScreen(userId: id));
                     }
                   },
                 ),
