@@ -3,11 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class DatabaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> addUser(String name, String contact, String id) async {
+  Future<void> addUser(String name, String id) async {
     try {
       await _firestore.collection('users').add({
         'name': name,
-        'contact': contact,
+        // 'contact': contact,
         'timestamp': FieldValue.serverTimestamp(),
         'id': id,
       });

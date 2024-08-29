@@ -1,49 +1,38 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:get_storage/get_storage.dart';
-import 'package:survey/screens/household_nonfinancial_screen/survey_controller.dart';
-import 'package:survey/screens/business_financial/business_financial_screen.dart';
+import 'package:survey/screens/business_financial/business_financial_personalcost/business_financial_personalcost_controller.dart';
+import 'package:survey/screens/business_nonFinancial/business_nonfinancial_setone/business_nonfinancial_setone_screen.dart';
 
-class SurveyScreen extends StatelessWidget {
+class BusinessFinancialPersonalcostScreen extends StatelessWidget {
   final String userId;
   bool flag = true;
-  SurveyScreen({super.key, required this.userId});
+  BusinessFinancialPersonalcostScreen({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context) {
-    final SurveyController surveyController = Get.put(SurveyController());
+    final BusinessFinancialPersonalcostController surveyController =
+        Get.put(BusinessFinancialPersonalcostController());
     final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-    final box = GetStorage();
-    List<TextEditingController> answerControllers = [];
 
-    Map<String, dynamic>? cachedUser = box.read('cached_user');
-    // if (cachedUser != null) {
-    //   String cachedName = cachedUser['name'];
-    //   String cachedId = cachedUser['id'];
-    //   print('using cached data: Name=$cachedName , ID =$cachedId ');
-    // }
+    List<TextEditingController> answerControllers = [];
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Household Non Financial Details',
-          style: TextStyle(fontSize: 15),
-        ),
+        title: Text('Personal Cost', style: TextStyle(fontSize: 15)),
       ),
       body: Obx(() {
         if (surveyController.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (surveyController.questions.isEmpty) {
+        if (surveyController.business_survey_questions_personal.isEmpty) {
           return const Center(child: Text('No survey questions available.'));
         }
 
         if (answerControllers.isEmpty) {
           answerControllers = List.generate(
-            surveyController.questions.length,
+            surveyController.business_survey_questions_personal.length,
             (index) => TextEditingController(),
           );
         }
@@ -52,9 +41,11 @@ class SurveyScreen extends StatelessWidget {
           key: _formKey,
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: surveyController.questions.length,
+            itemCount:
+                surveyController.business_survey_questions_personal.length,
             itemBuilder: (context, index) {
-              var question = surveyController.questions[index];
+              var question =
+                  surveyController.business_survey_questions_personal[index];
               TextInputType keyboardType;
 
               switch (question['keyboardType']) {
@@ -119,8 +110,13 @@ class SurveyScreen extends StatelessWidget {
                     FirebaseFirestore.instance.collection('users').doc(userId);
 
                 if (flag) {
-                  for (int i = 0; i < surveyController.questions.length; i++) {
-                    var question = surveyController.questions[i];
+                  for (int i = 0;
+                      i <
+                          surveyController
+                              .business_survey_questions_personal.length;
+                      i++) {
+                    var question =
+                        surveyController.business_survey_questions_personal[i];
                     String answer = answerControllers[i].text;
 
                     if (answer.isNotEmpty) {
@@ -136,7 +132,7 @@ class SurveyScreen extends StatelessWidget {
 
                 Get.snackbar('Success', 'Survey responses saved successfully');
 
-                Get.to(() => BusinessFinancialScreen(userId: userId));
+                Get.to(() => BusinessNonfinancialSetoneScreen(userId: userId));
               } catch (e) {
                 Get.snackbar('Error', 'Failed to save responses. Try again.');
               }

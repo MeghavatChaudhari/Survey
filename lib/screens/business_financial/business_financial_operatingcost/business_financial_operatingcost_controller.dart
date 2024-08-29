@@ -3,11 +3,11 @@ import 'package:get/get.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:get_storage/get_storage.dart';
 
-class SurveyController extends GetxController {
+class BusinessFinancialOperatingcostController extends GetxController {
   final FirebaseRemoteConfig _remoteConfig = FirebaseRemoteConfig.instance;
-  final box = GetStorage();
-  var questions = <Map<String, dynamic>>[].obs;
+  var business_survey_questions_operating = <Map<String, dynamic>>[].obs;
   var isLoading = true.obs;
+  final box = GetStorage();
 
   @override
   void onInit() {
@@ -26,17 +26,15 @@ class SurveyController extends GetxController {
     fetchSurveyQuestions();
   }
 
-  void loadCachedQuestions() {
+  void loadCachedQuestions() async {
     String? cachedQuestions = box.read('cached_questions');
     if (cachedQuestions != null) {
-      questions.value = List<Map<String, dynamic>>.from(
-          jsonDecode(cachedQuestions)['questions']);
-      print('loaded cached questions:${questions.value}');
+      business_survey_questions_operating.value =
+          await List<Map<String, dynamic>>.from(
+              jsonDecode(cachedQuestions)['questions']);
+      print(
+          'loaded cached questions:${business_survey_questions_operating.value}');
     }
-  }
-
-  Future<String> questionData() async {
-    return await _remoteConfig.getString('questions');
   }
 
   Future<void> fetchSurveyQuestions() async {
@@ -50,19 +48,23 @@ class SurveyController extends GetxController {
 
       await _remoteConfig.fetchAndActivate();
 
-      // Future<String> questionsData = await _remoteConfig.getString('questions');
-
-      String questionsData = await questionData();
+      String questionsData =
+          _remoteConfig.getString('business_financial_operating_questions');
 
       print('Raw questions data from Remote Config: $questionsData');
 
       if (questionsData.isNotEmpty) {
-        questions.value = List<Map<String, dynamic>>.from(
-            jsonDecode(questionsData)['questions']);
-        print('Parsed questions: ${questions.value}');
-
-        //cache questions
-        box.write('cached_questions', questionsData);
+        var decodedData = jsonDecode(questionsData);
+        if (decodedData['business_financial_operating_questions'] != null) {
+          business_survey_questions_operating.value =
+              List<Map<String, dynamic>>.from(
+                  decodedData['business_financial_operating_questions']);
+          print(
+              'Parsed questions: ${business_survey_questions_operating.value}');
+          box.write('cached_questions', questionsData);
+        } else {
+          print('No questions found in the fetched data.');
+        }
       } else {
         print('questionsData is empty.');
       }
