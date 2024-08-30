@@ -69,7 +69,8 @@ class DetailScreen extends StatelessWidget {
                           print('user saved to db');
                         } else {
                           // save locally if offline
-                          box.write('cached_user', {'name': name, 'id': id});
+                          await box
+                              .write('cached_user', {'name': name, 'id': id});
                           print('user cached locally');
                         }
                       } catch (e) {

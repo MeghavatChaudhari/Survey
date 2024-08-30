@@ -1,14 +1,15 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:survey/screens/household_nonfinancial_screen/survey_controller.dart';
 import 'package:survey/screens/business_financial/business_financial_screen.dart';
+import 'package:survey/utility/checkConnectivity.dart';
 
 class SurveyScreen extends StatelessWidget {
   final String userId;
   bool flag = true;
+
   SurveyScreen({super.key, required this.userId});
 
   @override
@@ -19,6 +20,7 @@ class SurveyScreen extends StatelessWidget {
     List<TextEditingController> answerControllers = [];
 
     Map<String, dynamic>? cachedUser = box.read('cached_user');
+    // Uncomment and use cachedUser if needed.
     // if (cachedUser != null) {
     //   String cachedName = cachedUser['name'];
     //   String cachedId = cachedUser['id'];
@@ -27,8 +29,8 @@ class SurveyScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Household Non Financial Details',
+        title: const Text(
+          'Household Non-Financial Details',
           style: TextStyle(fontSize: 15),
         ),
       ),
@@ -41,6 +43,7 @@ class SurveyScreen extends StatelessWidget {
           return const Center(child: Text('No survey questions available.'));
         }
 
+        // Initialize the answerControllers only once when the questions are available.
         if (answerControllers.isEmpty) {
           answerControllers = List.generate(
             surveyController.questions.length,
@@ -57,12 +60,12 @@ class SurveyScreen extends StatelessWidget {
               var question = surveyController.questions[index];
               TextInputType keyboardType;
 
+              // Define keyboard types based on the question type.
               switch (question['keyboardType']) {
                 case 'number':
                   keyboardType = TextInputType.number;
                   break;
                 case 'boolean':
-                  // In a real-world scenario, you might want to use a Switch or Checkbox for boolean input.
                   keyboardType = TextInputType.text;
                   break;
                 default:
@@ -81,9 +84,9 @@ class SurveyScreen extends StatelessWidget {
                       Text(
                         question['text'],
                         style: const TextStyle(
-                            fontSize: 21,
-                            fontStyle: FontStyle.normal,
-                            fontWeight: FontWeight.bold),
+                          fontSize: 21,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
@@ -114,32 +117,57 @@ class SurveyScreen extends StatelessWidget {
         child: ElevatedButton(
           onPressed: () async {
             if (_formKey.currentState?.validate() ?? false) {
-              try {
-                final userDocRef =
-                    FirebaseFirestore.instance.collection('users').doc(userId);
+              bool isConnected = await isConnectedToInternet();
 
-                if (flag) {
+              try {
+                if (isConnected) {
+                  final userDocRef = FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(userId);
+
+                  if (flag) {
+                    for (int i = 0;
+                        i < surveyController.questions.length;
+                        i++) {
+                      var question = surveyController.questions[i];
+                      String answer = answerControllers[i].text;
+
+                      if (answer.isNotEmpty) {
+                        await userDocRef.collection('survey_responses').add({
+                          'question': question['text'],
+                          'answer': answer,
+                          'timestamp': FieldValue.serverTimestamp(),
+                        });
+                      }
+                    }
+                    flag = false;
+                  }
+
+                  Get.snackbar(
+                      'Success', 'Survey responses saved successfully');
+                } else {
+                  // Handle offline saving of data.
                   for (int i = 0; i < surveyController.questions.length; i++) {
                     var question = surveyController.questions[i];
                     String answer = answerControllers[i].text;
 
                     if (answer.isNotEmpty) {
-                      await userDocRef.collection('survey_responses').add({
+                      box.write('cached_user_$i', {
                         'question': question['text'],
                         'answer': answer,
-                        'timestamp': FieldValue.serverTimestamp(),
+                        'timestamp': DateTime.now().toIso8601String(),
                       });
                     }
                   }
-                  flag = false;
+
+                  print('Responses cached locally');
                 }
-
-                Get.snackbar('Success', 'Survey responses saved successfully');
-
-                Get.to(() => BusinessFinancialScreen(userId: userId));
               } catch (e) {
                 Get.snackbar('Error', 'Failed to save responses. Try again.');
               }
+
+              // Navigate to the next screen after successful submission.
+              Get.to(() => BusinessFinancialScreen(userId: userId));
             } else {
               Get.snackbar('Error', 'Please answer all questions.');
             }

@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:survey/screens/business_financial/business_financial_personalcost/business_financial_personalcost_controller.dart';
 import 'package:survey/screens/business_nonFinancial/business_nonfinancial_setone/business_nonfinancial_setone_screen.dart';
+import 'package:survey/utility/checkConnectivity.dart';
+import 'package:get_storage/get_storage.dart';
 
 class BusinessFinancialPersonalcostScreen extends StatelessWidget {
   final String userId;
@@ -14,7 +16,7 @@ class BusinessFinancialPersonalcostScreen extends StatelessWidget {
     final BusinessFinancialPersonalcostController surveyController =
         Get.put(BusinessFinancialPersonalcostController());
     final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
+    final box = GetStorage();
     List<TextEditingController> answerControllers = [];
 
     return Scaffold(
@@ -105,11 +107,38 @@ class BusinessFinancialPersonalcostScreen extends StatelessWidget {
         child: ElevatedButton(
           onPressed: () async {
             if (_formKey.currentState?.validate() ?? false) {
+              bool isConnected = await isConnectedToInternet();
               try {
-                final userDocRef =
-                    FirebaseFirestore.instance.collection('users').doc(userId);
+                if (isConnected) {
+                  final userDocRef = FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(userId);
 
-                if (flag) {
+                  if (flag) {
+                    for (int i = 0;
+                        i <
+                            surveyController
+                                .business_survey_questions_personal.length;
+                        i++) {
+                      var question = surveyController
+                          .business_survey_questions_personal[i];
+                      String answer = answerControllers[i].text;
+
+                      if (answer.isNotEmpty) {
+                        await userDocRef.collection('survey_responses').add({
+                          'question': question['text'],
+                          'answer': answer,
+                          'timestamp': FieldValue.serverTimestamp(),
+                        });
+                      }
+                    }
+                    flag = false;
+                  }
+
+                  Get.snackbar(
+                      'Success', 'Survey responses saved successfully');
+                } else {
+                  // Handle offline saving of data.
                   for (int i = 0;
                       i <
                           surveyController
@@ -120,22 +149,20 @@ class BusinessFinancialPersonalcostScreen extends StatelessWidget {
                     String answer = answerControllers[i].text;
 
                     if (answer.isNotEmpty) {
-                      await userDocRef.collection('survey_responses').add({
+                      box.write('cached_user_$i', {
                         'question': question['text'],
                         'answer': answer,
-                        'timestamp': FieldValue.serverTimestamp(),
+                        'timestamp': DateTime.now().toIso8601String(),
                       });
                     }
                   }
-                  flag = false;
+
+                  print('Responses cached locally');
                 }
-
-                Get.snackbar('Success', 'Survey responses saved successfully');
-
-                Get.to(() => BusinessNonfinancialSetoneScreen(userId: userId));
               } catch (e) {
                 Get.snackbar('Error', 'Failed to save responses. Try again.');
               }
+              Get.to(() => BusinessNonfinancialSetoneScreen(userId: userId));
             } else {
               Get.snackbar('Error', 'Please answer all questions.');
             }
