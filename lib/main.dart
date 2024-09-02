@@ -2,7 +2,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:survey/firebase_options.dart';
+import 'package:survey/synchronization/users_data.dart';
+import 'firebase_options.dart';
 import 'package:survey/screens/detail_screen.dart';
 
 void main() async {
@@ -11,6 +12,10 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  //initialize and start sync service
+  final SyncService syncService = Get.put(SyncService());
+  syncService.startSyncing();
   runApp(const MyApp());
 }
 

@@ -1,36 +1,47 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:get_storage/get_storage.dart';
-import 'package:survey/screens/household_nonfinancial_screen/survey_controller.dart';
-import 'package:survey/screens/business_financial/business_financial_screen.dart';
-import 'package:survey/utility/checkConnectivity.dart';
+import 'package:survey/controller/allPage_controller.dart';
+import 'package:survey/global_functions/checkConnectivity.dart';
+import 'package:survey/cache/users_response.dart';
+import 'package:survey/screens/household_nonfinancial/household_screen.dart';
 
-class SurveyScreen extends StatelessWidget {
+class BusinessNonfinancialSettwo extends StatefulWidget {
   final String userId;
-  bool flag = true;
 
-  SurveyScreen({super.key, required this.userId});
+  BusinessNonfinancialSettwo({super.key, required this.userId});
+
+  @override
+  _BusinessNonfinancialSettwoState createState() =>
+      _BusinessNonfinancialSettwoState();
+}
+
+class _BusinessNonfinancialSettwoState
+    extends State<BusinessNonfinancialSettwo> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  List<TextEditingController> answerControllers = [];
+  bool _isSaved = false; // Flag to track if data has been saved
+  @override
+  void initState() {
+    super.initState();
+
+    final SurveyController surveyController = Get.put(SurveyController());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      surveyController
+          .checkStatusAndFetchQuestions('business_nonfinancial_settwo_key');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final SurveyController surveyController = Get.put(SurveyController());
-    final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-    final box = GetStorage();
-    List<TextEditingController> answerControllers = [];
-
-    Map<String, dynamic>? cachedUser = box.read('cached_user');
-    // Uncomment and use cachedUser if needed.
-    // if (cachedUser != null) {
-    //   String cachedName = cachedUser['name'];
-    //   String cachedId = cachedUser['id'];
-    //   print('using cached data: Name=$cachedName , ID =$cachedId ');
-    // }
+    final SurveyController surveyController = Get.find<SurveyController>();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Household Non-Financial Details',
+          'Business NonFinancial Details',
           style: TextStyle(fontSize: 15),
         ),
       ),
@@ -43,8 +54,8 @@ class SurveyScreen extends StatelessWidget {
           return const Center(child: Text('No survey questions available.'));
         }
 
-        // Initialize the answerControllers only once when the questions are available.
-        if (answerControllers.isEmpty) {
+        // Update: Ensure answerControllers are regenerated if the questions length changes
+        if (answerControllers.length != surveyController.questions.length) {
           answerControllers = List.generate(
             surveyController.questions.length,
             (index) => TextEditingController(),
@@ -60,7 +71,7 @@ class SurveyScreen extends StatelessWidget {
               var question = surveyController.questions[index];
               TextInputType keyboardType;
 
-              // Define keyboard types based on the question type.
+              // Determine keyboard type based on question data
               switch (question['keyboardType']) {
                 case 'number':
                   keyboardType = TextInputType.number;
@@ -117,57 +128,64 @@ class SurveyScreen extends StatelessWidget {
         child: ElevatedButton(
           onPressed: () async {
             if (_formKey.currentState?.validate() ?? false) {
+              if (_isSaved) {
+                Get.snackbar('Info', 'Data has already been saved.');
+                return;
+              }
+
               bool isConnected = await isConnectedToInternet();
 
-              try {
-                if (isConnected) {
+              List<Map<String, dynamic>> responses = [];
+              for (int i = 0; i < surveyController.questions.length; i++) {
+                var question = surveyController.questions[i];
+                String answer = answerControllers[i].text;
+
+                if (answer.isNotEmpty) {
+                  responses.add({
+                    'question': question['text'],
+                    'answer': answer,
+                  });
+                }
+              }
+
+              if (isConnected) {
+                try {
                   final userDocRef = FirebaseFirestore.instance
                       .collection('users')
-                      .doc(userId);
+                      .doc(widget.userId);
 
-                  if (flag) {
-                    for (int i = 0;
-                        i < surveyController.questions.length;
-                        i++) {
-                      var question = surveyController.questions[i];
-                      String answer = answerControllers[i].text;
-
-                      if (answer.isNotEmpty) {
-                        await userDocRef.collection('survey_responses').add({
-                          'question': question['text'],
-                          'answer': answer,
-                          'timestamp': FieldValue.serverTimestamp(),
-                        });
-                      }
-                    }
-                    flag = false;
+                  for (var response in responses) {
+                    await userDocRef.collection('survey_responses').add({
+                      'question': response['question'],
+                      'answer': response['answer'],
+                      'timestamp': FieldValue.serverTimestamp(),
+                    });
                   }
+
+                  setState(() {
+                    _isSaved =
+                        true; // Update flag to indicate data has been saved
+                  });
 
                   Get.snackbar(
                       'Success', 'Survey responses saved successfully');
-                } else {
-                  // Handle offline saving of data.
-                  for (int i = 0; i < surveyController.questions.length; i++) {
-                    var question = surveyController.questions[i];
-                    String answer = answerControllers[i].text;
-
-                    if (answer.isNotEmpty) {
-                      box.write('cached_user_$i', {
-                        'question': question['text'],
-                        'answer': answer,
-                        'timestamp': DateTime.now().toIso8601String(),
-                      });
-                    }
-                  }
-
-                  print('Responses cached locally');
+                } catch (e) {
+                  Get.snackbar('Error', 'Failed to save responses. Try again.');
                 }
-              } catch (e) {
-                Get.snackbar('Error', 'Failed to save responses. Try again.');
+              } else {
+                // Save responses in cache if offline
+                UserCacheService().saveSurveyResponse(widget.userId, responses);
+                setState(() {
+                  _isSaved =
+                      true; // Update flag to indicate data has been saved
+                });
+                Get.snackbar('Saved Locally',
+                    'No internet connection. Responses saved locally and will sync later.');
               }
 
-              // Navigate to the next screen after successful submission.
-              Get.to(() => BusinessFinancialScreen(userId: userId));
+              // Navigate to the next screen or show a success message
+              // Get.to(SomeOtherScreen(userId: widget.userId));
+              Get.to(() => HouseholdScreen(userId: widget.userId));
             } else {
               Get.snackbar('Error', 'Please answer all questions.');
             }

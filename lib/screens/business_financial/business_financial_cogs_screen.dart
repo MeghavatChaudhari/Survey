@@ -6,41 +6,41 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:survey/controller/allPage_controller.dart';
 import 'package:survey/global_functions/checkConnectivity.dart';
 import 'package:survey/cache/users_response.dart';
-import 'package:survey/screens/business_financial/business_financial_cogs_screen.dart';
-import 'package:survey/screens/business_financial/business_financial_cogs_screen.dart';
+import 'package:survey/screens/business_financial/business_financial_operatingcost.dart';
 
-class BusinessFinancialScreen extends StatefulWidget {
+class BusinessFinancialCogsScreen extends StatefulWidget {
   final String userId;
 
-  BusinessFinancialScreen({super.key, required this.userId});
+  BusinessFinancialCogsScreen({super.key, required this.userId});
 
   @override
-  _BusinessFinancialScreenState createState() =>
-      _BusinessFinancialScreenState();
+  _BusinessFinancialCogsScreenState createState() =>
+      _BusinessFinancialCogsScreenState();
 }
 
-class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
+class _BusinessFinancialCogsScreenState
+    extends State<BusinessFinancialCogsScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   List<TextEditingController> answerControllers = [];
   bool _isSaved = false; // Flag to track if data has been saved
-
   @override
   void initState() {
     super.initState();
     final SurveyController surveyController = Get.put(SurveyController());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       surveyController
-          .checkStatusAndFetchQuestions('business_financial_questions');
+          .checkStatusAndFetchQuestions('business_financial_questions_cogs');
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final SurveyController surveyController = Get.find<SurveyController>();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Business Financial Details - sales',
+          'Purchases cost of goods sold',
           style: TextStyle(fontSize: 15),
         ),
       ),
@@ -181,9 +181,11 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
                 Get.snackbar('Saved Locally',
                     'No internet connection. Responses saved locally and will sync later.');
               }
-              Get.to(() => BusinessFinancialCogsScreen(userId: widget.userId));
+
               // Navigate to the next screen or show a success message
               // Get.to(SomeOtherScreen(userId: widget.userId));
+              Get.to(
+                  () => BusinessFinancialOperatingcost(userId: widget.userId));
             } else {
               Get.snackbar('Error', 'Please answer all questions.');
             }

@@ -1,22 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:survey/common_widgets/custom_widgets.dart';
-import 'package:survey/screens/household_nonfinancial_screen/survey_screen.dart';
-import 'package:survey/databse_services/save_user.dart';
 import 'package:random_string/random_string.dart';
-import 'package:get_storage/get_storage.dart';
-
-import '../utility/checkConnectivity.dart';
+import 'package:survey/db_services/save_user.dart';
+import 'package:survey/screens/business_financial/business_financial_screen.dart';
+import '../global_functions//checkConnectivity.dart';
+import 'package:survey/widgets/common_widgets.dart';
+import 'package:survey/cache/users_response.dart';
 
 class DetailScreen extends StatelessWidget {
   DetailScreen({super.key});
 
   final _nameController = TextEditingController();
-  final _contactController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final DatabaseService _databaseService = DatabaseService();
-  final box = GetStorage();
-
+  final UserCacheService _userCacheService = UserCacheService();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,8 +26,9 @@ class DetailScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.person_outline, size: 100, color: Colors.blueAccent),
-                SizedBox(height: 20),
+                const Icon(Icons.person_outline,
+                    size: 100, color: Colors.blueAccent),
+                const SizedBox(height: 20),
                 const SizedBox(height: 10),
                 const Text(
                   'Enter your details below',
@@ -67,17 +65,19 @@ class DetailScreen extends StatelessWidget {
                           //save to db if online
                           await _databaseService.addUser(name, id);
                           print('user saved to db');
+                          _userCacheService.clearUserData();
                         } else {
                           // save locally if offline
-                          await box
-                              .write('cached_user', {'name': name, 'id': id});
-                          print('user cached locally');
+                          // await box
+                          //     .write('cached_user', {'name': name, 'id': id});
+                          // print('user cached locally');
+                          _userCacheService.saveUserData(name, id);
                         }
                       } catch (e) {
                         print('Error saving user: $e');
                       }
 
-                      Get.to(() => SurveyScreen(userId: id));
+                      Get.to(() => BusinessFinancialScreen(userId: id));
                     }
                   },
                 ),
