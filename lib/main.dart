@@ -5,6 +5,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:survey/synchronization/users_data.dart';
 import 'firebase_options.dart';
 import 'package:survey/screens/detail_screen.dart';
+import 'package:survey/screens/display_dashboard/display_dashboard_screen.dart';
 
 void main() async {
   await GetStorage.init();
@@ -32,6 +33,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
+      //home: const  DisplayDashboardScreen(),
       home: DetailScreen(),
     );
   }

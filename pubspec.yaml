@@ -44,6 +44,8 @@ dependencies:
   get_storage: ^2.1.1
   connectivity_plus: ^6.0.5
   http: ^1.2.2
+  gauge_indicator: ^0.4.3
+  syncfusion_flutter_gauges: ^26.2.11
 
 
 dev_dependencies:
