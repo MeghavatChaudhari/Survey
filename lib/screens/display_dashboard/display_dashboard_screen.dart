@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:survey/models/dashboard_data_model.dart';
+import 'package:survey/screens/detail_screen.dart';
 import 'package:survey/screens/display_dashboard/utils/api_call.dart';
 import 'package:survey/screens/display_dashboard/utils/color_display.dart';
 import 'package:survey/screens/display_dashboard/widgets/field_gauge_chart.dart';
@@ -131,8 +134,6 @@ class _DisplayDashboardScreenState extends State<DisplayDashboardScreen> {
                       ],
                     ),
                     SizedBox(height: 20),
-                    // Second Row
-                    Text(data.hrGrade.toString()),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
@@ -158,6 +159,11 @@ class _DisplayDashboardScreenState extends State<DisplayDashboardScreen> {
           }
         },
       ),
+      floatingActionButton: FloatingActionButton(child: Icon(Icons.home,color: Colors.blue[900],),
+    onPressed: (){
+      Get.to(() => DetailScreen());
+    }
+          ,),
     );
   }
 }

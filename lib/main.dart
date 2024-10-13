@@ -33,8 +33,8 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const  DisplayDashboardScreen(),
-     // home: DetailScreen(),
+      //home: const  DisplayDashboardScreen(),
+      home: DetailScreen(),
     );
   }
 }
