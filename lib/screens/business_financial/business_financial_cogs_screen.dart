@@ -23,14 +23,42 @@ class _BusinessFinancialCogsScreenState
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   List<TextEditingController> answerControllers = [];
   bool _isSaved = false; // Flag to track if data has been saved
+  List<FocusNode> focusNodes = [];
+
+
   @override
   void initState() {
     super.initState();
     final SurveyController surveyController = Get.put(SurveyController());
+
+    surveyController.questions.listen((questions) {
+      setState(() {
+        answerControllers = List.generate(
+          questions.length,
+              (index) => TextEditingController(),
+        );
+        focusNodes = List.generate(
+          questions.length,
+              (index) => FocusNode(),
+        );
+      });
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       surveyController
           .checkStatusAndFetchQuestions('business_financial_questions_cogs');
     });
+  }
+  @override
+  void dispose() {
+    // Dispose focus nodes and controllers when the screen is disposed
+    for (var focusNode in focusNodes) {
+      focusNode.dispose();
+    }
+    for (var controller in answerControllers) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   @override
@@ -99,9 +127,21 @@ class _BusinessFinancialCogsScreenState
                         ),
                       ),
                       const SizedBox(height: 20),
+
                       TextFormField(
                         controller: answerControllers[index],
                         keyboardType: keyboardType,
+                        textInputAction: index == surveyController.questions.length - 1
+                            ? TextInputAction.done
+                            : TextInputAction.next,
+                        focusNode: focusNodes[index],
+                        onFieldSubmitted: (_) {
+                          if (index < surveyController.questions.length - 1) {
+                            FocusScope.of(context).requestFocus(focusNodes[index + 1]);
+                          } else {
+                            FocusScope.of(context).unfocus(); // Close the keyboard if it's the last field
+                          }
+                        },
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           labelText: 'Your answer',

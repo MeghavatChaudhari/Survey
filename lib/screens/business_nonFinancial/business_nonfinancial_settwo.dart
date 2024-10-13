@@ -24,6 +24,8 @@ class _BusinessNonfinancialSettwoState
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   List<TextEditingController> answerControllers = [];
   bool _isSaved = false; // Flag to track if data has been saved
+  List<FocusNode> focusNodes = [];
+
   @override
   void initState() {
     super.initState();
@@ -33,7 +35,34 @@ class _BusinessNonfinancialSettwoState
       surveyController
           .checkStatusAndFetchQuestions('business_nonfinancial_settwo_key');
     });
+
+    surveyController.questions.listen((questions) {
+      setState(() {
+        answerControllers = List.generate(
+          questions.length,
+              (index) => TextEditingController(),
+        );
+        focusNodes = List.generate(
+          questions.length,
+              (index) => FocusNode(),
+        );
+      });
+    });
+
   }
+
+  @override
+  void dispose() {
+    // Dispose focus nodes and controllers when the screen is disposed
+    for (var focusNode in focusNodes) {
+      focusNode.dispose();
+    }
+    for (var controller in answerControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -104,6 +133,17 @@ class _BusinessNonfinancialSettwoState
                       TextFormField(
                         controller: answerControllers[index],
                         keyboardType: keyboardType,
+                        textInputAction: index == surveyController.questions.length - 1
+                            ? TextInputAction.done
+                            : TextInputAction.next,
+                        focusNode: focusNodes[index],
+                        onFieldSubmitted: (_) {
+                          if (index < surveyController.questions.length - 1) {
+                            FocusScope.of(context).requestFocus(focusNodes[index + 1]);
+                          } else {
+                            FocusScope.of(context).unfocus(); // Close the keyboard if it's the last field
+                          }
+                        },
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           labelText: 'Your answer',
