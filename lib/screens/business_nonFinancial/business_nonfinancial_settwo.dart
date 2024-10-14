@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,7 +5,6 @@ import 'package:survey/controller/allPage_controller.dart';
 import 'package:survey/global_functions/checkConnectivity.dart';
 import 'package:survey/cache/users_response.dart';
 import 'package:survey/screens/display_dashboard/display_dashboard_screen.dart';
-import 'package:survey/screens/household_nonfinancial/household_screen.dart';
 
 class BusinessNonfinancialSettwo extends StatefulWidget {
   final String userId;
@@ -226,7 +223,7 @@ class _BusinessNonfinancialSettwoState
 
               // Navigate to the next screen or show a success message
               // Get.to(SomeOtherScreen(userId: widget.userId));
-              Get.to(() => DisplayDashboardScreen());
+              Get.to(() => DisplayDashboardScreen(userId: widget.userId,));
               // Get.to(() => HouseholdScreen(userId: widget.userId));
             } else {
               Get.snackbar('Error', 'Please answer all questions.');

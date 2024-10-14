@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
@@ -5,57 +6,49 @@ import 'package:survey/models/dashboard_data_model.dart';
 import 'package:survey/screens/detail_screen.dart';
 import 'package:survey/screens/display_dashboard/utils/api_call.dart';
 import 'package:survey/screens/display_dashboard/utils/color_display.dart';
+import 'package:survey/screens/display_dashboard/utils/get_currrent_user.dart';
 import 'package:survey/screens/display_dashboard/widgets/field_gauge_chart.dart';
 import 'package:survey/screens/display_dashboard/widgets/trust_score_gauge_chart.dart';
 import 'package:survey/screens/display_dashboard/widgets/trust_component_table.dart';
 
 class DisplayDashboardScreen extends StatefulWidget {
-  const DisplayDashboardScreen({super.key});
+  final String userId;
+
+  const DisplayDashboardScreen({super.key, required this.userId});
 
   @override
   State<DisplayDashboardScreen> createState() => _DisplayDashboardScreenState();
 }
 
 class _DisplayDashboardScreenState extends State<DisplayDashboardScreen> {
-   Future<DashboardDataModel>? dashboardData;
 
-  @override
+   Future<DashboardDataModel>? dashboardData;
+   List<String> docIds = [];
+
+
+
+
+   // Future<void> getUserDetails(String userId) async {
+   //   try {
+   //     DocumentSnapshot userDoc = await FirebaseFirestore.instance
+   //         .collection('users')
+   //         .doc(userId)
+   //         .get();
+   //
+   //     print('user doc id ${userDoc.id}');
+   //   } catch (e) {
+   //     print('Error fetching user details: $e');
+   //   }
+   // }
+
+   @override
   void initState() {
     super.initState();
     dashboardData = getDashboardData();
   }
 
-  final List<Map<String, dynamic>> trustData = [
-    {
-      'component': 'Income (30%)',
-      'grade': 'High',
-      'color': gaugeDisplay(trustScoreString: 'High')
-    },
-    {
-      'component': 'Operating Cost (25%)',
-      'grade': 'Low',
-      'color': gaugeDisplay(trustScoreString: 'Low')
-    },
-    {
-      'component': 'Household Cost (30%)',
-      'grade': 'Moderately Low',
-      'color': gaugeDisplay(trustScoreString: 'Moderately Low')
-    },
-    {
-      'component': 'Average Ticket (10%)',
-      'grade': 'Slightly Low',
-      'color': gaugeDisplay(trustScoreString: 'Slightly Low')
-    },
-    {
-      'component': 'Household Food Cost (5%)',
-      'grade': 'Very Low',
-      'color': gaugeDisplay(trustScoreString: 'Very Low')
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
-
 
     return Scaffold(
       appBar: AppBar(
@@ -85,8 +78,9 @@ class _DisplayDashboardScreenState extends State<DisplayDashboardScreen> {
                       ),
                     ),
                     GestureDetector(
-                        onTap: () {
-                          getDashboardData();
+                        onTap: () async{
+                          print('this is the current User Data');
+                          getDocByFieldId(widget.userId);
                         },
                         child: TrustComponentTable(
                           data: [

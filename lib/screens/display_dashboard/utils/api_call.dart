@@ -1,6 +1,6 @@
-import 'dart:convert'; // For JSON encoding and decoding
+import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:survey/models/dashboard_data_model.dart'; // Import your model
+import 'package:survey/models/dashboard_data_model.dart';
 
 Future<DashboardDataModel> getDashboardData() async {
   try {
