@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:survey/controller/allPage_controller.dart';
+import 'package:survey/global_functions/access_responses.dart';
 import 'package:survey/global_functions/checkConnectivity.dart';
 import 'package:survey/cache/users_response.dart';
 import 'package:survey/screens/business_nonFinancial/business_nonfinancial_setone.dart';
@@ -23,6 +24,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
   bool _isSaved = false; // Flag to track if data has been saved
   bool _isLoading = true; // Track the loading state for the form
   List<FocusNode> focusNodes = [];
+  AccessResponses accessResponses = AccessResponses();
 
   @override
   void initState() {
@@ -47,7 +49,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
     Map<String, String> savedAnswers = {};
     if (snapshot.docs.isNotEmpty) {
       for (var doc in snapshot.docs) {
-        savedAnswers[doc['question']] = doc['answer'];
+        savedAnswers[doc['question']] = doc['answer'].toString();
       }
     }
 
@@ -212,10 +214,21 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                 String answer = answerControllers[i].text;
 
                 if (answer.isNotEmpty) {
-                  responses.add({
-                    'question': question['text'],
-                    'answer': answer,
-                  });
+                  // Convert the answer to double
+                  double? answerAsDouble = double.tryParse(answer);
+
+                  // Ensure we only add valid doubles
+                  if (answerAsDouble != null) {
+                    responses.add({
+                      'question': question['text'],
+                      'answer': answerAsDouble,  // Store the answer as a double
+                    });
+                    accessResponses.allAnswers.add({
+                      question['label'] : answerAsDouble,
+                    });
+                  } else {
+                    Get.snackbar('Error', 'Please enter a valid number for question: ${question['text']}');
+                  }
                 }
               }
 
@@ -251,8 +264,15 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                     'No internet connection. Responses saved locally and will sync later.');
               }
 
+
+
+
+              print(accessResponses.allAnswers);
+              List<Map<String,double>>  answers = accessResponses.allAnswers;
+
+
               // Navigate to the next screen
-              Get.to(() => DisplayDashboardScreen(userId: widget.userId,));
+              Get.to(() => DisplayDashboardScreen(userId: widget.userId, answers: answers,));
             } else {
               Get.snackbar('Error', 'Please answer all questions.');
             }

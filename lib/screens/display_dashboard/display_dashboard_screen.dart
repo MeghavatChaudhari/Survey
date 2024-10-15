@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:survey/global_functions/access_responses.dart';
 import 'package:survey/models/dashboard_data_model.dart';
 import 'package:survey/screens/detail_screen.dart';
 import 'package:survey/screens/display_dashboard/utils/api_call.dart';
@@ -13,8 +14,9 @@ import 'package:survey/screens/display_dashboard/widgets/trust_component_table.d
 
 class DisplayDashboardScreen extends StatefulWidget {
   final String userId;
+  final List<Map<String,double>> answers;
 
-  const DisplayDashboardScreen({super.key, required this.userId});
+  const DisplayDashboardScreen({super.key, required this.userId, required this.answers});
 
   @override
   State<DisplayDashboardScreen> createState() => _DisplayDashboardScreenState();
@@ -24,13 +26,14 @@ class _DisplayDashboardScreenState extends State<DisplayDashboardScreen> {
 
    Future<DashboardDataModel>? dashboardData;
    List<String> docIds = [];
-
+   AccessResponses accessResponses = AccessResponses();
 
    @override
   void initState() {
     super.initState();
     dashboardData = getDashboardData();
     getDocByFieldId(widget.userId);
+
   }
 
   @override
@@ -50,13 +53,15 @@ class _DisplayDashboardScreenState extends State<DisplayDashboardScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(child: Text('Unable to Fetch Trust Data'));
           } else if (snapshot.hasData) {
             DashboardDataModel data = snapshot.data!;
             return SafeArea(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
+                    Text(widget.answers.length.toString()),
+
                     Padding(
                       padding: const EdgeInsets.only(top: 20),
                       child: TrustScoreGaugeChart(
@@ -65,9 +70,8 @@ class _DisplayDashboardScreenState extends State<DisplayDashboardScreen> {
                     ),
                     GestureDetector(
                       onTap: (){
-                        // getResponses(widget.userId);
-                        getSurveyResponses(widget.userId);
-
+                        accessResponses.getAllValues();
+                        print(accessResponses.getAllValues()[0]);
                       },
                       child: TrustComponentTable(
                         data: [

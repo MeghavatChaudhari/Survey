@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:survey/controller/allPage_controller.dart';
+import 'package:survey/global_functions/access_responses.dart';
 import 'package:survey/global_functions/checkConnectivity.dart';
 import 'package:survey/cache/users_response.dart';
 import 'package:survey/screens/business_financial/business_financial_personalcost.dart';
@@ -25,6 +26,7 @@ class _BusinessFinancialOperatingcostState
   List<TextEditingController> answerControllers = [];
   bool _isSaved = false; // Flag to track if data has been saved
   bool _isLoading = true; // Flag to track if data is being loaded
+  AccessResponses accessResponses = AccessResponses();
 
   List<FocusNode> focusNodes = [];
 
@@ -81,7 +83,7 @@ class _BusinessFinancialOperatingcostState
     Map<String, String> savedAnswers = {};
     if (snapshot.docs.isNotEmpty) {
       for (var doc in snapshot.docs) {
-        savedAnswers[doc['question']] = doc['answer'];
+        savedAnswers[doc['question']] = doc['answer'].toString();
       }
     }
     print('meta');
@@ -250,10 +252,21 @@ class _BusinessFinancialOperatingcostState
                 String answer = answerControllers[i].text;
 
                 if (answer.isNotEmpty) {
-                  responses.add({
-                    'question': question['text'],
-                    'answer': answer,
-                  });
+                  // Convert the answer to double
+                  double? answerAsDouble = double.tryParse(answer);
+
+                  // Ensure we only add valid doubles
+                  if (answerAsDouble != null) {
+                    responses.add({
+                      'question': question['text'],
+                      'answer': answerAsDouble,  // Store the answer as a double
+                    });
+                    accessResponses.allAnswers.add({
+                      question['label'] : answerAsDouble,
+                    });
+                  } else {
+                    Get.snackbar('Error', 'Please enter a valid number for question: ${question['text']}');
+                  }
                 }
               }
 
@@ -291,6 +304,9 @@ class _BusinessFinancialOperatingcostState
                 Get.snackbar('Saved Locally',
                     'No internet connection. Responses saved locally and will sync later.');
               }
+
+              print('global');
+              print(accessResponses.allAnswers);
 
               // Navigate to the next screen or show a success message
               Get.to(
