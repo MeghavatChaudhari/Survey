@@ -7,6 +7,7 @@ import 'package:survey/controller/allPage_controller.dart';
 import 'package:survey/global_functions/checkConnectivity.dart';
 import 'package:survey/cache/users_response.dart';
 import 'package:survey/screens/business_nonFinancial/business_nonfinancial_setone.dart';
+import 'package:survey/screens/business_financial/business_financial_operatingcost.dart';
 
 class BusinessFinancialPersonalcost extends StatefulWidget {
   final String userId;
@@ -23,15 +24,21 @@ class _BusinessFinancialPersonalcostState
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   List<TextEditingController> answerControllers = [];
   bool _isSaved = false; // Flag to track if data has been saved
+  bool _isLoading = true; // Flag to track if data is being loaded
+
   List<FocusNode> focusNodes = [];
 
   @override
   void initState() {
     super.initState();
     final SurveyController surveyController = Get.put(SurveyController());
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      surveyController
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await surveyController
           .checkStatusAndFetchQuestions('business_financial_personal_key');
+      await _loadSavedResponses(); // Load saved data when the screen is loaded
+      setState(() {
+        _isLoading = false; // Set loading to false after data is loaded
+      });
     });
 
     surveyController.questions.listen((questions) {
@@ -60,15 +67,69 @@ class _BusinessFinancialPersonalcostState
     super.dispose();
   }
 
+  // Function to load saved responses and pre-populate the form fields
+  Future<void> _loadSavedResponses() async {
+    final SurveyController surveyController = Get.find<SurveyController>();
+    final userDocRef =
+        FirebaseFirestore.instance.collection('users').doc(widget.userId);
+
+    // Fetch saved responses from Firestore
+    final snapshot = await userDocRef.collection('survey_responses').get();
+
+    Map<String, String> savedAnswers = {};
+    if (snapshot.docs.isNotEmpty) {
+      for (var doc in snapshot.docs) {
+        savedAnswers[doc['question']] = doc['answer'];
+      }
+    }
+
+    // Populate answerControllers with saved answers
+    if (answerControllers.isEmpty) {
+      setState(() {
+        answerControllers =
+            List.generate(surveyController.questions.length, (index) {
+          var question = surveyController.questions[index];
+          var controller =
+              TextEditingController(text: savedAnswers[question['text']] ?? '');
+
+          // Add listener to detect changes and reset _isSaved
+          controller.addListener(() {
+            setState(() {
+              _isSaved = false;
+            });
+          });
+
+          return controller;
+        });
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final SurveyController surveyController = Get.find<SurveyController>();
+
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Personal Cost Questions'),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'Personal Cost',
           style: TextStyle(fontSize: 15),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () async {
+            // Handle back press and navigate
+            Get.to(() => BusinessFinancialOperatingcost(userId: widget.userId));
+          },
         ),
       ),
       body: Obx(() {
@@ -151,6 +212,11 @@ class _BusinessFinancialPersonalcostState
                             return 'Please enter an answer';
                           }
                           return null;
+                        },
+                        onChanged: (value) {
+                          setState(() {
+                            _isSaved = false; // Reset the save flag on any edit
+                          });
                         },
                       ),
                       const SizedBox(height: 20),

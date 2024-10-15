@@ -7,6 +7,7 @@ import 'package:survey/controller/allPage_controller.dart';
 import 'package:survey/global_functions/checkConnectivity.dart';
 import 'package:survey/cache/users_response.dart';
 import 'package:survey/screens/business_nonFinancial/business_nonfinancial_settwo.dart';
+import 'package:survey/screens/business_financial/business_financial_personalcost.dart';
 
 class BusinessNonfinancialSetone extends StatefulWidget {
   final String userId;
@@ -22,16 +23,22 @@ class _BusinessNonfinancialSetoneState
     extends State<BusinessNonfinancialSetone> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   List<TextEditingController> answerControllers = [];
-  bool _isSaved = false;// Flag to track if data has been saved
+  bool _isSaved = false;
+  bool _isLoading = true;
+
   List<FocusNode> focusNodes = [];
 
   @override
   void initState() {
     super.initState();
     final SurveyController surveyController = Get.put(SurveyController());
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      surveyController
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await surveyController
           .checkStatusAndFetchQuestions('business_nonfinancial_setone_key');
+      await _loadSavedResponses();
+      setState(() {
+        _isLoading = false;
+      });
     });
 
     surveyController.questions.listen((questions) {
@@ -60,15 +67,64 @@ class _BusinessNonfinancialSetoneState
     super.dispose();
   }
 
+  Future<void> _loadSavedResponses() async {
+    final SurveyController surveyController = Get.find<SurveyController>();
+    final userDocRef =
+        FirebaseFirestore.instance.collection('users').doc(widget.userId);
+
+    final snapshot = await userDocRef.collection('survey_responses').get();
+
+    Map<String, String> savedAnswers = {};
+    if (snapshot.docs.isNotEmpty) {
+      for (var doc in snapshot.docs) {
+        savedAnswers[doc['question']] = doc['answer'];
+      }
+    }
+
+    if (answerControllers.isEmpty) {
+      setState(() {
+        answerControllers =
+            List.generate(surveyController.questions.length, (index) {
+          var question = surveyController.questions[index];
+          var controller =
+              TextEditingController(text: savedAnswers[question['text']] ?? '');
+
+          controller.addListener(() {
+            setState(() {
+              _isSaved = false;
+            });
+          });
+
+          return controller;
+        });
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final SurveyController surveyController = Get.find<SurveyController>();
+
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Business NonFinancial Details'),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'Business NonFinancial Details',
           style: TextStyle(fontSize: 15),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () async {
+            Get.to(() => BusinessFinancialPersonalcost(userId: widget.userId));
+          },
         ),
       ),
       body: Obx(() {
@@ -151,6 +207,11 @@ class _BusinessNonfinancialSetoneState
                             return 'Please enter an answer';
                           }
                           return null;
+                        },
+                        onChanged: (value) {
+                          setState(() {
+                            _isSaved = false;
+                          });
                         },
                       ),
                       const SizedBox(height: 20),

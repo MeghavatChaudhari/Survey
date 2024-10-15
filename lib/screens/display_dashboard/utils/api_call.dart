@@ -18,6 +18,8 @@ Future<DashboardDataModel> getDashboardData() async {
         "Off_Sales": 1000,
         "Off_Duration": 4,
         "Annual_Sales_1": 1008000,
+
+
         "Total_Purchase": 15000,
         "Monthly_Purchase": 5000,
         "Weekly_Purchase": 1000,

@@ -22,16 +22,21 @@ class BusinessFinancialScreen extends StatefulWidget {
 class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   List<TextEditingController> answerControllers = [];
+  bool _isSaved = false;
   List<FocusNode> focusNodes = [];
-  bool _isSaved = false; // Flag to track if data has been saved
+ // Flag to track if data has been saved
 
   @override
   void initState() {
     super.initState();
     final SurveyController surveyController = Get.put(SurveyController());
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      surveyController
+
+    // Fetch questions and load saved responses
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      surveyController.questions.clear();
+      await surveyController
           .checkStatusAndFetchQuestions('business_financial_questions');
+      await _loadSavedResponses(); // Load responses after fetching questions
     });
 
     surveyController.questions.listen((questions) {
@@ -59,6 +64,44 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
       controller.dispose();
     }
     super.dispose();
+  }
+
+  // Function to load saved responses and pre-populate the form fields
+  Future<void> _loadSavedResponses() async {
+    final SurveyController surveyController = Get.find<SurveyController>();
+    final userDocRef =
+        FirebaseFirestore.instance.collection('users').doc(widget.userId);
+
+    // Fetch saved responses from Firestore
+    final snapshot = await userDocRef.collection('survey_responses').get();
+
+    Map<String, String> savedAnswers = {};
+    if (snapshot.docs.isNotEmpty) {
+      for (var doc in snapshot.docs) {
+        savedAnswers[doc['question']] = doc['answer'];
+      }
+    }
+
+    // Populate answerControllers with saved answers
+    if (answerControllers.length != surveyController.questions.length) {
+      answerControllers =
+          List.generate(surveyController.questions.length, (index) {
+        var question = surveyController.questions[index];
+        var controller =
+            TextEditingController(text: savedAnswers[question['text']] ?? '');
+
+        // Add listener to detect changes and reset _isSaved
+        controller.addListener(() {
+          setState(() {
+            _isSaved = false;
+          });
+        });
+
+        return controller;
+      });
+    }
+
+    setState(() {}); // Refresh the UI to reflect pre-filled data
   }
 
   @override
@@ -195,6 +238,13 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
                   final userDocRef = FirebaseFirestore.instance
                       .collection('users')
                       .doc(widget.userId);
+
+                  // Clear existing responses and save updated ones
+                  var existingResponsesSnapshot =
+                      await userDocRef.collection('survey_responses').get();
+                  for (var doc in existingResponsesSnapshot.docs) {
+                    await doc.reference.delete();
+                  }
 
                   for (var response in responses) {
                     await userDocRef.collection('survey_responses').add({

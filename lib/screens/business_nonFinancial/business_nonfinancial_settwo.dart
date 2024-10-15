@@ -1,10 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:survey/controller/allPage_controller.dart';
 import 'package:survey/global_functions/checkConnectivity.dart';
 import 'package:survey/cache/users_response.dart';
+import 'package:survey/screens/business_nonFinancial/business_nonfinancial_setone.dart';
 import 'package:survey/screens/display_dashboard/display_dashboard_screen.dart';
+import 'package:survey/screens/household_nonfinancial/household_screen.dart';
 
 class BusinessNonfinancialSettwo extends StatefulWidget {
   final String userId;
@@ -21,17 +24,56 @@ class _BusinessNonfinancialSettwoState
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   List<TextEditingController> answerControllers = [];
   bool _isSaved = false; // Flag to track if data has been saved
+  bool _isLoading = true; // Track the loading state for the form
+
   List<FocusNode> focusNodes = [];
 
   @override
   void initState() {
     super.initState();
-
     final SurveyController surveyController = Get.put(SurveyController());
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      surveyController
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await surveyController
           .checkStatusAndFetchQuestions('business_nonfinancial_settwo_key');
+      await _loadSavedResponses();
+      setState(() {
+        _isLoading = false;
+      });
     });
+  }
+
+  Future<void> _loadSavedResponses() async {
+    final SurveyController surveyController = Get.find<SurveyController>();
+    final userDocRef =
+        FirebaseFirestore.instance.collection('users').doc(widget.userId);
+
+    final snapshot = await userDocRef.collection('survey_responses').get();
+
+    Map<String, String> savedAnswers = {};
+    if (snapshot.docs.isNotEmpty) {
+      for (var doc in snapshot.docs) {
+        savedAnswers[doc['question']] = doc['answer'];
+      }
+    }
+
+    if (answerControllers.isEmpty) {
+      setState(() {
+        answerControllers = List.generate(
+          surveyController.questions.length,
+          (index) {
+            var question = surveyController.questions[index];
+            var controller = TextEditingController(
+                text: savedAnswers[question['text']] ?? '');
+            controller.addListener(() {
+              setState(() {
+                _isSaved = false;
+              });
+            });
+            return controller;
+          },
+        );
+      });
+    }
 
     surveyController.questions.listen((questions) {
       setState(() {
@@ -65,11 +107,27 @@ class _BusinessNonfinancialSettwoState
   Widget build(BuildContext context) {
     final SurveyController surveyController = Get.find<SurveyController>();
 
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Business NonFinancial Details'),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'Business NonFinancial Details',
           style: TextStyle(fontSize: 15),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () async {
+            // Navigate to the previous set (set one)
+            Get.to(() => BusinessNonfinancialSetone(userId: widget.userId));
+          },
         ),
       ),
       body: Obx(() {
@@ -81,14 +139,6 @@ class _BusinessNonfinancialSettwoState
           return const Center(child: Text('No survey questions available.'));
         }
 
-        // Update: Ensure answerControllers are regenerated if the questions length changes
-        if (answerControllers.length != surveyController.questions.length) {
-          answerControllers = List.generate(
-            surveyController.questions.length,
-            (index) => TextEditingController(),
-          );
-        }
-
         return Form(
           key: _formKey,
           child: ListView.builder(
@@ -98,7 +148,6 @@ class _BusinessNonfinancialSettwoState
               var question = surveyController.questions[index];
               TextInputType keyboardType;
 
-              // Determine keyboard type based on question data
               switch (question['keyboardType']) {
                 case 'number':
                   keyboardType = TextInputType.number;
@@ -133,7 +182,7 @@ class _BusinessNonfinancialSettwoState
                         textInputAction: index == surveyController.questions.length - 1
                             ? TextInputAction.done
                             : TextInputAction.next,
-                        focusNode: focusNodes[index],
+                        //focusNode: focusNodes[index],
                         onFieldSubmitted: (_) {
                           if (index < surveyController.questions.length - 1) {
                             FocusScope.of(context).requestFocus(focusNodes[index + 1]);
@@ -144,8 +193,7 @@ class _BusinessNonfinancialSettwoState
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           labelText: 'Your answer',
-                          prefixIcon: Icon(
-                              Icons.question_answer), // Icon inside the border
+                          prefixIcon: Icon(Icons.question_answer),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -203,8 +251,7 @@ class _BusinessNonfinancialSettwoState
                   }
 
                   setState(() {
-                    _isSaved =
-                        true; // Update flag to indicate data has been saved
+                    _isSaved = true;
                   });
 
                   Get.snackbar(
@@ -213,20 +260,17 @@ class _BusinessNonfinancialSettwoState
                   Get.snackbar('Error', 'Failed to save responses. Try again.');
                 }
               } else {
-                // Save responses in cache if offline
                 UserCacheService().saveSurveyResponse(widget.userId, responses);
                 setState(() {
-                  _isSaved =
-                      true; // Update flag to indicate data has been saved
+                  _isSaved = true;
                 });
                 Get.snackbar('Saved Locally',
                     'No internet connection. Responses saved locally and will sync later.');
               }
 
-              // Navigate to the next screen or show a success message
-              // Get.to(SomeOtherScreen(userId: widget.userId));
-              Get.to(() => DisplayDashboardScreen(userId: widget.userId,));
-              // Get.to(() => HouseholdScreen(userId: widget.userId));
+              // Navigate to the next screen
+
+              Get.to(() => HouseholdScreen(userId: widget.userId));
             } else {
               Get.snackbar('Error', 'Please answer all questions.');
             }

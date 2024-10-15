@@ -7,6 +7,7 @@ import 'package:survey/controller/allPage_controller.dart';
 import 'package:survey/global_functions/checkConnectivity.dart';
 import 'package:survey/cache/users_response.dart';
 import 'package:survey/screens/business_financial/business_financial_operatingcost.dart';
+import 'package:survey/screens/business_financial/business_financial_screen.dart';
 
 class BusinessFinancialCogsScreen extends StatefulWidget {
   final String userId;
@@ -26,6 +27,8 @@ class _BusinessFinancialCogsScreenState
   List<FocusNode> focusNodes = [];
 
 
+  bool _isLoading = true; // Flag to track if data is being loaded
+
   @override
   void initState() {
     super.initState();
@@ -44,10 +47,54 @@ class _BusinessFinancialCogsScreenState
       });
     });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      surveyController
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await surveyController
           .checkStatusAndFetchQuestions('business_financial_questions_cogs');
+      await _loadSavedResponses(); // Load saved data when the screen is loaded
+      setState(() {
+        _isLoading = false; // Set loading to false after data is loaded
+      });
     });
+  }
+
+  // Function to load saved responses and pre-populate the form fields
+  Future<void> _loadSavedResponses() async {
+    final SurveyController surveyController = Get.find<SurveyController>();
+    final userDocRef =
+        FirebaseFirestore.instance.collection('users').doc(widget.userId);
+
+    // Fetch saved responses from Firestore
+    final snapshot = await userDocRef.collection('survey_responses').get();
+
+    Map<String, String> savedAnswers = {};
+    if (snapshot.docs.isNotEmpty) {
+      for (var doc in snapshot.docs) {
+        savedAnswers[doc['question']] = doc['answer'];
+      }
+    }
+    print('meta');
+    print(savedAnswers);
+
+    // Populate answerControllers with saved answers
+    if (answerControllers.isEmpty) {
+      setState(() {
+        answerControllers =
+            List.generate(surveyController.questions.length, (index) {
+          var question = surveyController.questions[index];
+          var controller =
+              TextEditingController(text: savedAnswers[question['text']] ?? '');
+
+          // Add listener to detect changes and reset _isSaved
+          controller.addListener(() {
+            setState(() {
+              _isSaved = false;
+            });
+          });
+
+          return controller;
+        });
+      });
+    }
   }
   @override
   void dispose() {
@@ -65,11 +112,27 @@ class _BusinessFinancialCogsScreenState
   Widget build(BuildContext context) {
     final SurveyController surveyController = Get.find<SurveyController>();
 
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Purchases cost of goods sold'),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'Purchases cost of goods sold',
           style: TextStyle(fontSize: 15),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () async {
+            // Handle back press and question fetching logic
+            Get.to(() => BusinessFinancialScreen(userId: widget.userId));
+          },
         ),
       ),
       body: Obx(() {
@@ -127,7 +190,6 @@ class _BusinessFinancialCogsScreenState
                         ),
                       ),
                       const SizedBox(height: 20),
-
                       TextFormField(
                         controller: answerControllers[index],
                         keyboardType: keyboardType,
@@ -153,6 +215,11 @@ class _BusinessFinancialCogsScreenState
                             return 'Please enter an answer';
                           }
                           return null;
+                        },
+                        onChanged: (value) {
+                          setState(() {
+                            _isSaved = false; // Reset the save flag on any edit
+                          });
                         },
                       ),
                       const SizedBox(height: 20),
