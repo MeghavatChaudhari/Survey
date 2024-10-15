@@ -1,12 +1,10 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:survey/controller/allPage_controller.dart';
 import 'package:survey/global_functions/checkConnectivity.dart';
 import 'package:survey/cache/users_response.dart';
-import 'package:survey/screens/business_financial/business_financial_cogs_screen.dart';
 import 'package:survey/screens/business_financial/business_financial_cogs_screen.dart';
 
 class BusinessFinancialScreen extends StatefulWidget {
@@ -22,16 +20,60 @@ class BusinessFinancialScreen extends StatefulWidget {
 class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   List<TextEditingController> answerControllers = [];
-  bool _isSaved = false; // Flag to track if data has been saved
+  bool _isSaved = false;
 
   @override
   void initState() {
     super.initState();
+
+    // Register SurveyController
     final SurveyController surveyController = Get.put(SurveyController());
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      surveyController
+
+    // Fetch questions and load saved responses
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      surveyController.questions.clear();
+      await surveyController
           .checkStatusAndFetchQuestions('business_financial_questions');
+      await _loadSavedResponses(); // Load responses after fetching questions
     });
+  }
+
+  // Function to load saved responses and pre-populate the form fields
+  Future<void> _loadSavedResponses() async {
+    final SurveyController surveyController = Get.find<SurveyController>();
+    final userDocRef =
+        FirebaseFirestore.instance.collection('users').doc(widget.userId);
+
+    // Fetch saved responses from Firestore
+    final snapshot = await userDocRef.collection('survey_responses').get();
+
+    Map<String, String> savedAnswers = {};
+    if (snapshot.docs.isNotEmpty) {
+      for (var doc in snapshot.docs) {
+        savedAnswers[doc['question']] = doc['answer'];
+      }
+    }
+
+    // Populate answerControllers with saved answers
+    if (answerControllers.length != surveyController.questions.length) {
+      answerControllers =
+          List.generate(surveyController.questions.length, (index) {
+        var question = surveyController.questions[index];
+        var controller =
+            TextEditingController(text: savedAnswers[question['text']] ?? '');
+
+        // Add listener to detect changes and reset _isSaved
+        controller.addListener(() {
+          setState(() {
+            _isSaved = false;
+          });
+        });
+
+        return controller;
+      });
+    }
+
+    setState(() {}); // Refresh the UI to reflect pre-filled data
   }
 
   @override
@@ -53,14 +95,6 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
           return const Center(child: Text('No survey questions available.'));
         }
 
-        // Update: Ensure answerControllers are regenerated if the questions length changes
-        if (answerControllers.length != surveyController.questions.length) {
-          answerControllers = List.generate(
-            surveyController.questions.length,
-            (index) => TextEditingController(),
-          );
-        }
-
         return Form(
           key: _formKey,
           child: ListView.builder(
@@ -70,7 +104,6 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
               var question = surveyController.questions[index];
               TextInputType keyboardType;
 
-              // Determine keyboard type based on question data
               switch (question['keyboardType']) {
                 case 'number':
                   keyboardType = TextInputType.number;
@@ -105,11 +138,7 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           labelText: 'Your answer',
-                          // Adding the icon here
-                          // icon: Icon(Icons.question_answer), // Icon outside the border
-                          // Alternatively, you can use prefixIcon
-                          prefixIcon: Icon(
-                              Icons.question_answer), // Icon inside the border
+                          prefixIcon: Icon(Icons.question_answer),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -132,11 +161,7 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
         child: ElevatedButton(
           onPressed: () async {
             if (_formKey.currentState?.validate() ?? false) {
-              if (_isSaved) {
-                Get.snackbar('Info', 'Data has already been saved.');
-                return;
-              }
-
+              // No need to check _isSaved when saving updated responses
               bool isConnected = await isConnectedToInternet();
 
               List<Map<String, dynamic>> responses = [];
@@ -158,6 +183,13 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
                       .collection('users')
                       .doc(widget.userId);
 
+                  // Clear existing responses and save updated ones
+                  var existingResponsesSnapshot =
+                      await userDocRef.collection('survey_responses').get();
+                  for (var doc in existingResponsesSnapshot.docs) {
+                    await doc.reference.delete();
+                  }
+
                   for (var response in responses) {
                     await userDocRef.collection('survey_responses').add({
                       'question': response['question'],
@@ -167,8 +199,7 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
                   }
 
                   setState(() {
-                    _isSaved =
-                        true; // Update flag to indicate data has been saved
+                    _isSaved = true;
                   });
 
                   Get.snackbar(
@@ -177,18 +208,14 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
                   Get.snackbar('Error', 'Failed to save responses. Try again.');
                 }
               } else {
-                // Save responses in cache if offline
                 UserCacheService().saveSurveyResponse(widget.userId, responses);
                 setState(() {
-                  _isSaved =
-                      true; // Update flag to indicate data has been saved
+                  _isSaved = true;
                 });
                 Get.snackbar('Saved Locally',
                     'No internet connection. Responses saved locally and will sync later.');
               }
               Get.to(() => BusinessFinancialCogsScreen(userId: widget.userId));
-              // Navigate to the next screen or show a success message
-              // Get.to(SomeOtherScreen(userId: widget.userId));
             } else {
               Get.snackbar('Error', 'Please answer all questions.');
             }
