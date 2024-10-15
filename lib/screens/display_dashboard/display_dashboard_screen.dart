@@ -6,7 +6,7 @@ import 'package:survey/models/dashboard_data_model.dart';
 import 'package:survey/screens/detail_screen.dart';
 import 'package:survey/screens/display_dashboard/utils/api_call.dart';
 import 'package:survey/screens/display_dashboard/utils/color_display.dart';
-import 'package:survey/screens/display_dashboard/utils/get_currrent_user.dart';
+import 'package:survey/screens/display_dashboard/utils/get_current_user.dart';
 import 'package:survey/screens/display_dashboard/widgets/field_gauge_chart.dart';
 import 'package:survey/screens/display_dashboard/widgets/trust_score_gauge_chart.dart';
 import 'package:survey/screens/display_dashboard/widgets/trust_component_table.dart';
@@ -26,25 +26,11 @@ class _DisplayDashboardScreenState extends State<DisplayDashboardScreen> {
    List<String> docIds = [];
 
 
-
-
-   // Future<void> getUserDetails(String userId) async {
-   //   try {
-   //     DocumentSnapshot userDoc = await FirebaseFirestore.instance
-   //         .collection('users')
-   //         .doc(userId)
-   //         .get();
-   //
-   //     print('user doc id ${userDoc.id}');
-   //   } catch (e) {
-   //     print('Error fetching user details: $e');
-   //   }
-   // }
-
    @override
   void initState() {
     super.initState();
     dashboardData = getDashboardData();
+    getDocByFieldId(widget.userId);
   }
 
   @override
@@ -78,39 +64,41 @@ class _DisplayDashboardScreenState extends State<DisplayDashboardScreen> {
                       ),
                     ),
                     GestureDetector(
-                        onTap: () async{
-                          print('this is the current User Data');
-                          getDocByFieldId(widget.userId);
-                        },
-                        child: TrustComponentTable(
-                          data: [
-                            {
-                              'component': 'Income (30%)',
-                              'grade': data.incomeTrustGrade,
-                              'color': gaugeDisplay(trustScoreString: data.incomeTrustGrade)
-                            },
-                            {
-                              'component': 'Operating Cost (25%)',
-                              'grade': data.incomeTrustGrade,
-                              'color': gaugeDisplay(trustScoreString: data.incomeTrustGrade)
-                            },
-                            {
-                              'component': 'Household Cost (30%)',
-                              'grade': data.householdCostTrustGrade,
-                              'color': gaugeDisplay(trustScoreString: data.householdCostTrustGrade)
-                            },
-                            {
-                              'component': 'Average Ticket (10%)',
-                              'grade': data.avTicketTrustGrade,
-                              'color': gaugeDisplay(trustScoreString: data.avTicketTrustGrade)
-                            },
-                            {
-                              'component': 'Household Food Cost (5%)',
-                              'grade': data.foodCostTrustGrade,
-                              'color': gaugeDisplay(trustScoreString: data.foodCostTrustGrade)
-                            },
-                          ],
-                        )),
+                      onTap: (){
+                        // getResponses(widget.userId);
+                        getSurveyResponses(widget.userId);
+
+                      },
+                      child: TrustComponentTable(
+                        data: [
+                          {
+                            'component': 'Income (30%)',
+                            'grade': data.incomeTrustGrade,
+                            'color': gaugeDisplay(trustScoreString: data.incomeTrustGrade)
+                          },
+                          {
+                            'component': 'Operating Cost (25%)',
+                            'grade': data.incomeTrustGrade,
+                            'color': gaugeDisplay(trustScoreString: data.incomeTrustGrade)
+                          },
+                          {
+                            'component': 'Household Cost (30%)',
+                            'grade': data.householdCostTrustGrade,
+                            'color': gaugeDisplay(trustScoreString: data.householdCostTrustGrade)
+                          },
+                          {
+                            'component': 'Average Ticket (10%)',
+                            'grade': data.avTicketTrustGrade,
+                            'color': gaugeDisplay(trustScoreString: data.avTicketTrustGrade)
+                          },
+                          {
+                            'component': 'Household Food Cost (5%)',
+                            'grade': data.foodCostTrustGrade,
+                            'color': gaugeDisplay(trustScoreString: data.foodCostTrustGrade)
+                          },
+                        ],
+                      ),
+                    ),
                     SizedBox(
                       height: 30,
                     ),
