@@ -143,6 +143,11 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           labelText: 'Your answer',
+                          // Adding the icon here
+                          // icon: Icon(Icons.question_answer), // Icon outside the border
+                          // Alternatively, you can use prefixIcon
+                          prefixIcon: Icon(
+                              Icons.question_answer), // Icon inside the border
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {

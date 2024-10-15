@@ -144,6 +144,8 @@ class _BusinessNonfinancialSettwoState
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           labelText: 'Your answer',
+                          prefixIcon: Icon(
+                              Icons.question_answer), // Icon inside the border
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
