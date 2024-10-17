@@ -4,9 +4,36 @@ class AccessResponses {
   factory AccessResponses() {
     return _instance;
   }
+
   AccessResponses._internal();
 
   List<Map<String, double>> allAnswers = []; // Store all responses
+
+  void checkAndInsertValues(Map<String, double> currentEntry) {
+    print('Current entry values:');
+
+    currentEntry.forEach((key, value) {
+      String toCheck = key;
+      print(toCheck);
+      bool keyExists = false;
+
+      for (var entry in allAnswers) {
+        if (entry.containsKey(toCheck)) {
+          entry[toCheck] = value;
+          keyExists = true;
+          print("$toCheck is already present. Updated value: $value");
+          break;
+        }
+      }
+
+      if (!keyExists) {
+        print("$toCheck is not present. Adding new entry.");
+        allAnswers.add({key: value});
+      }
+
+      print('Label: $key, Value: $value');
+    });
+  }
 
 
   Map<String, double> getMapValues(List<Map<String, double>> answersList) {
@@ -17,7 +44,4 @@ class AccessResponses {
     print('Merged Map: $mergedMap');
     return mergedMap;
   }
-
 }
-
-
