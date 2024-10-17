@@ -24,6 +24,7 @@ class _BusinessFinancialPersonalcostState
   List<TextEditingController> answerControllers = [];
   bool _isSaved = false; // Flag to track if data has been saved
   bool _isLoading = true; // Flag to track if data is being loaded
+  List<FocusNode> focusNodes = [];
 
   @override
   void initState() {
@@ -37,6 +38,16 @@ class _BusinessFinancialPersonalcostState
         _isLoading = false; // Set loading to false after data is loaded
       });
     });
+
+    surveyController.questions.listen((questions) {
+      setState(() {
+        focusNodes = List.generate(
+          questions.length,
+              (index) => FocusNode(),
+        );
+      });
+    });
+
   }
 
   // Function to load saved responses and pre-populate the form fields
@@ -153,6 +164,17 @@ class _BusinessFinancialPersonalcostState
                       TextFormField(
                         controller: answerControllers[index],
                         keyboardType: keyboardType,
+                        textInputAction: index == surveyController.questions.length - 1
+                            ? TextInputAction.done
+                            : TextInputAction.next,
+                        focusNode: focusNodes[index],
+                        onFieldSubmitted: (_) {
+                          if (index < surveyController.questions.length - 1) {
+                            FocusScope.of(context).requestFocus(focusNodes[index + 1]);
+                          } else {
+                            FocusScope.of(context).unfocus(); // Close the keyboard if it's the last field
+                          }
+                        },
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           labelText: 'Your answer',

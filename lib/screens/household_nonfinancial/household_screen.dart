@@ -4,8 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:survey/controller/allPage_controller.dart';
 import 'package:survey/global_functions/checkConnectivity.dart';
 import 'package:survey/cache/users_response.dart';
+import 'package:survey/screens/business_nonFinancial/business_nonfinancial_setone.dart';
 import 'package:survey/screens/business_nonFinancial/business_nonfinancial_settwo.dart';
 import 'package:survey/screens/detail_screen.dart';
+import 'package:survey/screens/display_dashboard/display_dashboard_screen.dart';
 
 class HouseholdScreen extends StatefulWidget {
   final String userId;
@@ -21,6 +23,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
   List<TextEditingController> answerControllers = [];
   bool _isSaved = false; // Flag to track if data has been saved
   bool _isLoading = true; // Track the loading state for the form
+  List<FocusNode> focusNodes = [];
 
   @override
   void initState() {
@@ -33,6 +36,16 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
         _isLoading = false;
       });
     });
+
+    surveyController.questions.listen((questions) {
+      setState(() {
+        focusNodes = List.generate(
+          questions.length,
+              (index) => FocusNode(),
+        );
+      });
+    });
+
   }
 
   Future<void> _loadSavedResponses() async {
@@ -92,7 +105,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () async {
             // Navigate to the previous set or any screen
-            Get.to(() => BusinessNonfinancialSettwo(userId: widget.userId));
+            Get.to(() => BusinessNonfinancialSetone(userId: widget.userId));
           },
         ),
       ),
@@ -145,6 +158,17 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                       TextFormField(
                         controller: answerControllers[index],
                         keyboardType: keyboardType,
+                        textInputAction: index == surveyController.questions.length - 1
+                            ? TextInputAction.done
+                            : TextInputAction.next,
+                        focusNode: focusNodes[index],
+                        onFieldSubmitted: (_) {
+                          if (index < surveyController.questions.length - 1) {
+                            FocusScope.of(context).requestFocus(focusNodes[index + 1]);
+                          } else {
+                            FocusScope.of(context).unfocus(); // Close the keyboard if it's the last field
+                          }
+                        },
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           labelText: 'Your answer',
@@ -224,7 +248,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
               }
 
               // Navigate to the next screen
-              Get.to(() => DetailScreen());
+              Get.to(() => DisplayDashboardScreen(userId: widget.userId, answers: [],));
             } else {
               Get.snackbar('Error', 'Please answer all questions.');
             }

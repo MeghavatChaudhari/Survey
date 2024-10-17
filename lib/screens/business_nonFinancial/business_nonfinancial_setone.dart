@@ -7,6 +7,7 @@ import 'package:survey/global_functions/checkConnectivity.dart';
 import 'package:survey/cache/users_response.dart';
 import 'package:survey/screens/business_nonFinancial/business_nonfinancial_settwo.dart';
 import 'package:survey/screens/business_financial/business_financial_personalcost.dart';
+import 'package:survey/screens/household_nonfinancial/household_screen.dart';
 
 class BusinessNonfinancialSetone extends StatefulWidget {
   final String userId;
@@ -24,6 +25,7 @@ class _BusinessNonfinancialSetoneState
   List<TextEditingController> answerControllers = [];
   bool _isSaved = false;
   bool _isLoading = true;
+  List<FocusNode> focusNodes = [];
 
   @override
   void initState() {
@@ -35,6 +37,15 @@ class _BusinessNonfinancialSetoneState
       await _loadSavedResponses();
       setState(() {
         _isLoading = false;
+      });
+    });
+
+    surveyController.questions.listen((questions) {
+      setState(() {
+        focusNodes = List.generate(
+          questions.length,
+              (index) => FocusNode(),
+        );
       });
     });
   }
@@ -148,6 +159,17 @@ class _BusinessNonfinancialSetoneState
                       TextFormField(
                         controller: answerControllers[index],
                         keyboardType: keyboardType,
+                        textInputAction: index == surveyController.questions.length - 1
+                            ? TextInputAction.done
+                            : TextInputAction.next,
+                        focusNode: focusNodes[index],
+                        onFieldSubmitted: (_) {
+                          if (index < surveyController.questions.length - 1) {
+                            FocusScope.of(context).requestFocus(focusNodes[index + 1]);
+                          } else {
+                            FocusScope.of(context).unfocus(); // Close the keyboard if it's the last field
+                          }
+                        },
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           labelText: 'Your answer',
@@ -231,7 +253,7 @@ class _BusinessNonfinancialSetoneState
                     'No internet connection. Responses saved locally and will sync later.');
               }
 
-              Get.to(() => BusinessNonfinancialSettwo(userId: widget.userId));
+              Get.to(() => HouseholdScreen(userId: widget.userId));
             } else {
               Get.snackbar('Error', 'Please answer all questions.');
             }
