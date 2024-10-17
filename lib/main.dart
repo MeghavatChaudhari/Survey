@@ -35,7 +35,6 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      //home: const  DisplayDashboardScreen(userId: '679Aj08V78'),
       home: DetailScreen(),
     );
   }

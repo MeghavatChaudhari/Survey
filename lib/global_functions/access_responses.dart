@@ -9,20 +9,14 @@ class AccessResponses {
   List<Map<String, double>> allAnswers = []; // Store all responses
 
 
-  List<double> getAllValues() {
-    List<double> values = [];
-
-    // Iterate through all answers and extract all values
-    for (var answer in allAnswers) {
-      values.addAll(answer.values.cast<double>());
+  Map<String, double> getMapValues(List<Map<String, double>> answersList) {
+    Map<String, double> mergedMap = {};
+    for (var map in answersList) {
+      mergedMap.addAll(map); // Add each map's key-value pairs to the merged map
     }
-
-    print('Extracted values:');
-    print(values);
-
-    return values;
+    print('Merged Map: $mergedMap');
+    return mergedMap;
   }
-
 
 }
 

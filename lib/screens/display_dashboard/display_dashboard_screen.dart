@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:survey/custom_exceptions.dart';
 import 'package:survey/global_functions/access_responses.dart';
 import 'package:survey/models/dashboard_data_model.dart';
 import 'package:survey/screens/detail_screen.dart';
@@ -31,8 +32,12 @@ class _DisplayDashboardScreenState extends State<DisplayDashboardScreen> {
    @override
   void initState() {
     super.initState();
-    dashboardData = getDashboardData();
+    dashboardData = getDashboardData(accessResponses.getMapValues(widget.answers));
     getDocByFieldId(widget.userId);
+    print("These are the Answers");
+    print(accessResponses.getMapValues(widget.answers));
+    print('Dashboard Data which will be used');
+    print(dashboardData);
 
   }
 
@@ -53,55 +58,56 @@ class _DisplayDashboardScreenState extends State<DisplayDashboardScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Unable to Fetch Trust Data'));
-          } else if (snapshot.hasData) {
+            final error = snapshot.error;
+            String errorMessage;
+            if (error is ServerException) {
+              errorMessage = error.message;
+            } else if (error is NetworkException) {
+              errorMessage = error.message;
+            } else {
+              errorMessage = 'An unexpected error occurred: ${error.toString()}';
+            }
+            return Center(child: Text(errorMessage));
+          }  else if (snapshot.hasData) {
             DashboardDataModel data = snapshot.data!;
             return SafeArea(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    Text(widget.answers.length.toString()),
-
                     Padding(
                       padding: const EdgeInsets.only(top: 20),
                       child: TrustScoreGaugeChart(
                         gaugeValue: data.trustScore ?? 0.0,
                       ),
                     ),
-                    GestureDetector(
-                      onTap: (){
-                        accessResponses.getAllValues();
-                        print(accessResponses.getAllValues()[0]);
-                      },
-                      child: TrustComponentTable(
-                        data: [
-                          {
-                            'component': 'Income (30%)',
-                            'grade': data.incomeTrustGrade,
-                            'color': gaugeDisplay(trustScoreString: data.incomeTrustGrade)
-                          },
-                          {
-                            'component': 'Operating Cost (25%)',
-                            'grade': data.incomeTrustGrade,
-                            'color': gaugeDisplay(trustScoreString: data.incomeTrustGrade)
-                          },
-                          {
-                            'component': 'Household Cost (30%)',
-                            'grade': data.householdCostTrustGrade,
-                            'color': gaugeDisplay(trustScoreString: data.householdCostTrustGrade)
-                          },
-                          {
-                            'component': 'Average Ticket (10%)',
-                            'grade': data.avTicketTrustGrade,
-                            'color': gaugeDisplay(trustScoreString: data.avTicketTrustGrade)
-                          },
-                          {
-                            'component': 'Household Food Cost (5%)',
-                            'grade': data.foodCostTrustGrade,
-                            'color': gaugeDisplay(trustScoreString: data.foodCostTrustGrade)
-                          },
-                        ],
-                      ),
+                    TrustComponentTable(
+                      data: [
+                        {
+                          'component': 'Income (30%)',
+                          'grade': data.incomeTrustGrade,
+                          'color': gaugeDisplay(trustScoreString: data.incomeTrustGrade)
+                        },
+                        {
+                          'component': 'Operating Cost (25%)',
+                          'grade': data.incomeTrustGrade,
+                          'color': gaugeDisplay(trustScoreString: data.incomeTrustGrade)
+                        },
+                        {
+                          'component': 'Household Cost (30%)',
+                          'grade': data.householdCostTrustGrade,
+                          'color': gaugeDisplay(trustScoreString: data.householdCostTrustGrade)
+                        },
+                        {
+                          'component': 'Average Ticket (10%)',
+                          'grade': data.avTicketTrustGrade,
+                          'color': gaugeDisplay(trustScoreString: data.avTicketTrustGrade)
+                        },
+                        {
+                          'component': 'Household Food Cost (5%)',
+                          'grade': data.foodCostTrustGrade,
+                          'color': gaugeDisplay(trustScoreString: data.foodCostTrustGrade)
+                        },
+                      ],
                     ),
                     SizedBox(
                       height: 30,
@@ -145,11 +151,6 @@ class _DisplayDashboardScreenState extends State<DisplayDashboardScreen> {
           }
         },
       ),
-      floatingActionButton: FloatingActionButton(child: Icon(Icons.home,color: Colors.blue[900],),
-    onPressed: (){
-      Get.to(() => DetailScreen());
-    }
-          ,),
     );
   }
 }
