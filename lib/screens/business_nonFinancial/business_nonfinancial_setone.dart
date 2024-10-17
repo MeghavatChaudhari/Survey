@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:survey/controller/allPage_controller.dart';
+import 'package:survey/global_functions/access_responses.dart';
 import 'package:survey/global_functions/checkConnectivity.dart';
 import 'package:survey/cache/users_response.dart';
 import 'package:survey/screens/business_nonFinancial/business_nonfinancial_settwo.dart';
@@ -26,6 +27,7 @@ class _BusinessNonfinancialSetoneState
   bool _isSaved = false;
   bool _isLoading = true;
   List<FocusNode> focusNodes = [];
+  AccessResponses accessResponses = AccessResponses();
 
   @override
   void initState() {
@@ -218,6 +220,9 @@ class _BusinessNonfinancialSetoneState
                     'question': question['text'],
                     'answer': answer,
                   });
+                  accessResponses.allAnswers.add({
+                    question['label'] : double.parse(answer),
+                  });
                 }
               }
 
@@ -252,6 +257,8 @@ class _BusinessNonfinancialSetoneState
                 Get.snackbar('Saved Locally',
                     'No internet connection. Responses saved locally and will sync later.');
               }
+              print('global');
+              print(accessResponses.allAnswers);
 
               Get.to(() => HouseholdScreen(userId: widget.userId));
             } else {

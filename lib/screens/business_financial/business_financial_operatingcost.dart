@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:survey/controller/allPage_controller.dart';
+import 'package:survey/global_functions/access_responses.dart';
 import 'package:survey/global_functions/checkConnectivity.dart';
 import 'package:survey/cache/users_response.dart';
 import 'package:survey/screens/business_financial/business_financial_personalcost.dart';
@@ -25,6 +26,7 @@ class _BusinessFinancialOperatingcostState
   bool _isSaved = false; // Flag to track if data has been saved
   bool _isLoading = true; // Flag to track if data is being loaded
   List<FocusNode> focusNodes = [];
+  AccessResponses accessResponses = AccessResponses();
 
   @override
   void initState() {
@@ -225,6 +227,10 @@ class _BusinessFinancialOperatingcostState
                     'question': question['text'],
                     'answer': answer,
                   });
+                  accessResponses.allAnswers.add({
+                    question['label'] : double.parse(answer),
+                  });
+
                 }
               }
 
@@ -261,6 +267,8 @@ class _BusinessFinancialOperatingcostState
                     'No internet connection. Responses saved locally and will sync later.');
               }
 
+              print('global');
+              print(accessResponses.allAnswers);
               // Navigate to the next screen
               Get.to(
                   () => BusinessFinancialPersonalcost(userId: widget.userId));
