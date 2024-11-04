@@ -227,7 +227,7 @@ class _BusinessFinancialCogsScreenState
                     'question': question['text'],
                     'answer': answer,
                   });
-                  accessResponses.allAnswers.add({
+                  accessResponses.checkAndInsertValues({
                     question['label'] : double.parse(answer),
                   });
                 }

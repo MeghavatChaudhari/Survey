@@ -225,7 +225,7 @@ class _BusinessFinancialPersonalcostState
                     'question': question['text'],
                     'answer': answer,
                   });
-                  accessResponses.allAnswers.add({
+                  accessResponses.checkAndInsertValues({
                     question['label'] : double.parse(answer),
                   });
                 }

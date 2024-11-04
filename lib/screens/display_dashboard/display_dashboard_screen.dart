@@ -59,14 +59,7 @@ class _DisplayDashboardScreenState extends State<DisplayDashboardScreen> {
             return Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             final error = snapshot.error;
-            String errorMessage;
-            if (error is ServerException) {
-              errorMessage = error.message;
-            } else if (error is NetworkException) {
-              errorMessage = error.message;
-            } else {
-              errorMessage = 'An unexpected error occurred: ${error.toString()}';
-            }
+            String errorMessage = error.toString();
             return Center(child: Text(errorMessage));
           }  else if (snapshot.hasData) {
             DashboardDataModel data = snapshot.data!;
