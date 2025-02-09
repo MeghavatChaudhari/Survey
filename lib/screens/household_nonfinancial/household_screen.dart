@@ -26,6 +26,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
   bool _isLoading = true; // Track the loading state for the form
   List<FocusNode> focusNodes = [];
   AccessResponses accessResponses = AccessResponses();
+  Map<int, String?> dropdownValues = {};
 
   @override
   void initState() {
@@ -157,7 +158,35 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      TextFormField(
+                      question['keyboardType'] == "dropdown" ? DropdownButtonFormField<String>(
+                        value: dropdownValues[question['id']],
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: 'Your answer',
+                          prefixIcon: Icon(Icons.question_answer),
+                        ),
+                        hint: const Text("Select an option"),
+                        items: (question['options'] as List<dynamic>)
+                            .map((dynamic value) => value.toString())
+                            .toList()
+                            .map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please select an option';
+                          }
+                          return null;
+                        },
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            dropdownValues[question['id']] = newValue;
+                          });
+                        },
+                      ) : TextFormField(
                         controller: answerControllers[index],
                         keyboardType: keyboardType,
                         textInputAction: index == surveyController.questions.length - 1
@@ -168,7 +197,7 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                           if (index < surveyController.questions.length - 1) {
                             FocusScope.of(context).requestFocus(focusNodes[index + 1]);
                           } else {
-                            FocusScope.of(context).unfocus(); // Close the keyboard if it's the last field
+                            FocusScope.of(context).unfocus();
                           }
                         },
                         decoration: const InputDecoration(

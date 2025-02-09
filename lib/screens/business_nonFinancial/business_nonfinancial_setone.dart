@@ -28,6 +28,7 @@ class _BusinessNonfinancialSetoneState
   bool _isLoading = true;
   List<FocusNode> focusNodes = [];
   AccessResponses accessResponses = AccessResponses();
+  Map<int, String?> dropdownValues = {};
 
   @override
   void initState() {
@@ -46,7 +47,7 @@ class _BusinessNonfinancialSetoneState
       setState(() {
         focusNodes = List.generate(
           questions.length,
-              (index) => FocusNode(),
+          (index) => FocusNode(),
         );
       });
     });
@@ -85,6 +86,7 @@ class _BusinessNonfinancialSetoneState
       });
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -158,37 +160,78 @@ class _BusinessNonfinancialSetoneState
                         ),
                       ),
                       const SizedBox(height: 20),
-                      TextFormField(
-                        controller: answerControllers[index],
-                        keyboardType: keyboardType,
-                        textInputAction: index == surveyController.questions.length - 1
-                            ? TextInputAction.done
-                            : TextInputAction.next,
-                        focusNode: focusNodes[index],
-                        onFieldSubmitted: (_) {
-                          if (index < surveyController.questions.length - 1) {
-                            FocusScope.of(context).requestFocus(focusNodes[index + 1]);
-                          } else {
-                            FocusScope.of(context).unfocus(); // Close the keyboard if it's the last field
-                          }
-                        },
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          labelText: 'Your answer',
-                          prefixIcon: Icon(Icons.question_answer),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter an answer';
-                          }
-                          return null;
-                        },
-                        onChanged: (value) {
-                          setState(() {
-                            _isSaved = false;
-                          });
-                        },
-                      ),
+                      question['keyboardType'] == "dropdown"
+                          ? DropdownButtonFormField<String>(
+                              value: dropdownValues[question['id']],
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                labelText: 'Your answer',
+                                prefixIcon: Icon(Icons.question_answer),
+                              ),
+                              hint: const Text("Select an option"),
+                              items: (question['options'] as List<dynamic>)
+                                  .map((dynamic value) => value.toString())
+                                  .toList()
+                                  .map((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              }).toList(),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please select an option';
+                                }
+                                return null;
+                              },
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  dropdownValues[question['id']] = newValue;
+                                });
+                              },
+                            )
+                          : TextFormField(
+                              controller: answerControllers[index],
+                              keyboardType: keyboardType,
+                              textInputAction:
+                                  index == surveyController.questions.length - 1
+                                      ? TextInputAction.done
+                                      : TextInputAction.next,
+                              focusNode: focusNodes[index],
+                              onFieldSubmitted: (_) {
+                                if (index <
+                                    surveyController.questions.length - 1) {
+                                  FocusScope.of(context)
+                                      .requestFocus(focusNodes[index + 1]);
+                                } else {
+                                  FocusScope.of(context)
+                                      .unfocus(); // Close the keyboard if it's the last field
+                                }
+                              },
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(),
+                                labelText: 'Your answer',
+                                prefixIcon:
+                                    question['keyboardType'] == "location"
+                                        ? GestureDetector(
+                                            onTap: () {
+                                              //_getCurrentLocation(index);
+                                            },
+                                            child: Icon(Icons.location_on))
+                                        : Icon(Icons.question_answer),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter an answer';
+                                }
+                                return null;
+                              },
+                              onChanged: (value) {
+                                setState(() {
+                                  _isSaved = false;
+                                });
+                              },
+                            ),
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -221,7 +264,7 @@ class _BusinessNonfinancialSetoneState
                     'answer': answer,
                   });
                   accessResponses.checkAndInsertValues({
-                    question['label'] : double.parse(answer),
+                    question['label']: double.parse(answer),
                   });
                 }
               }
