@@ -239,13 +239,15 @@ class _HouseholdScreenState extends State<HouseholdScreen> {
                 String answer = answerControllers[i].text;
 
                 if (answer.isNotEmpty) {
-                  responses.add({
-                    'question': question['text'],
-                    'answer': answer,
-                  });
-                  accessResponses.checkAndInsertValues({
-                    question['label'] : double.parse(answer),
-                  });
+                  if(question['keyboardType'] != "dropdown"){
+                    responses.add({
+                      'question': question['text'],
+                      'answer': answer,
+                    });
+                    accessResponses.checkAndInsertValues({
+                      question['label'] : double.parse(answer),
+                    });
+                  }
                 }
               }
 

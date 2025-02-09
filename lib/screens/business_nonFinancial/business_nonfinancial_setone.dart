@@ -87,7 +87,6 @@ class _BusinessNonfinancialSetoneState
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final SurveyController surveyController = Get.find<SurveyController>();
@@ -224,6 +223,50 @@ class _BusinessNonfinancialSetoneState
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter an answer';
                                 }
+                                String label = question['label'];
+                                if (label == "Total_Inventory") {
+                                  double shopValue = double.tryParse(
+                                          answerControllers
+                                              .firstWhere(
+                                                  (controller) =>
+                                                      surveyController
+                                                                  .questions[
+                                                              answerControllers
+                                                                  .indexOf(
+                                                                      controller)]
+                                                          ['label'] ==
+                                                      "Inventory_Shop",
+                                                  orElse: () =>
+                                                      TextEditingController(
+                                                          text: "0"))
+                                              .text) ??
+                                      0.0;
+
+                                  double warehouseValue = double.tryParse(
+                                          answerControllers
+                                              .firstWhere(
+                                                  (controller) =>
+                                                      surveyController
+                                                                  .questions[
+                                                              answerControllers
+                                                                  .indexOf(
+                                                                      controller)]
+                                                          ['label'] ==
+                                                      "Inventory_Warehouse",
+                                                  orElse: () =>
+                                                      TextEditingController(
+                                                          text: "0"))
+                                              .text) ??
+                                      0.0;
+
+                                  double totalValue =
+                                      double.tryParse(value) ?? 0.0;
+
+                                  if (totalValue !=
+                                      shopValue + warehouseValue) {
+                                    return "Total must equal Shop and Warehouse values";
+                                  }
+                                }
                                 return null;
                               },
                               onChanged: (value) {
@@ -259,13 +302,15 @@ class _BusinessNonfinancialSetoneState
                 String answer = answerControllers[i].text;
 
                 if (answer.isNotEmpty) {
-                  responses.add({
-                    'question': question['text'],
-                    'answer': answer,
-                  });
-                  accessResponses.checkAndInsertValues({
-                    question['label']: double.parse(answer),
-                  });
+                  if(question['keyboardType'] != "dropdown"){
+                    responses.add({
+                      'question': question['text'],
+                      'answer': answer,
+                    });
+                    accessResponses.checkAndInsertValues({
+                      question['label']: double.parse(answer),
+                    });
+                  }
                 }
               }
 

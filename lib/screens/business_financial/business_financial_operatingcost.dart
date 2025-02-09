@@ -188,6 +188,23 @@ class _BusinessFinancialOperatingcostState
                           if (value == null || value.isEmpty) {
                             return 'Please enter an answer';
                           }
+
+                          if (index != answerControllers.length - 1){
+                            double individualSum = 0;
+                            for (int i = 1; i < answerControllers.length - 1; i++) {
+                              individualSum += double.parse(answerControllers[i].text);
+                            }
+                            print(individualSum);
+                            final double lowerLimit = double.parse(answerControllers[0].text) * 0.85;
+                            final double upperLimit = double.parse(answerControllers[0].text) * 1.15;
+
+                            if (individualSum < lowerLimit || individualSum > upperLimit) {
+
+                              return "Total exceeds expected cost range";
+                            }
+                          }
+
+
                           return null;
                         },
                         onChanged: (value) {
