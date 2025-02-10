@@ -12,6 +12,8 @@ class SurveyController extends GetxController {
   var questions = <Map<String, dynamic>>[].obs;
   var isLoading = false.obs;
   var isConnected = false.obs;
+  final RxBool isSnackbarShown = false.obs;
+
 
   @override
   void onInit() {

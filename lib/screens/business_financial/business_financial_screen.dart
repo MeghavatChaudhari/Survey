@@ -24,6 +24,7 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
   bool _isSaved = false;
   List<FocusNode> focusNodes = [];
   AccessResponses accessResponses = AccessResponses();
+  bool isValidated = false;
 
   @override
   void initState() {
@@ -87,6 +88,8 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
 
     setState(() {}); // Refresh the UI to reflect pre-filled data
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -166,35 +169,141 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
                           labelText: 'Your answer',
                           prefixIcon: Icon(Icons.question_answer),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter an answer';
+                        // validator: (value) {
+                        //   if (value == null || value.isEmpty) {
+                        //     return 'Please enter an answer';
+                        //   }
+                        //
+                        //   double monthlySales =
+                        //       getValueFromField("Monthly_Sales");
+                        //   double weeklySales =
+                        //       getValueFromField("Weekly_Sales");
+                        //   double dailySales = getValueFromField("Daily_Sales");
+                        //   double peakSales = getValueFromField("Peak_Sales");
+                        //   double annualSales =
+                        //       getValueFromField("Annual_Sales_1");
+                        //
+                        //   /// Monthly Field - Less than Daily and Weekly
+                        //   // if (surveyController.questions[index]['label'] ==
+                        //   //     "Monthly_Sales") {
+                        //   // if (index == 0) {
+                        //     if (monthlySales < weeklySales) {
+                        //       return "Monthly sales should not be less than weekly sales.";
+                        //     }
+                        //     if (monthlySales < dailySales) {
+                        //       return "Monthly sales should not be less than daily sales.";
+                        //     }
+                        //   // }
+                        //
+                        //   /// Weekly Field - Less than Daily
+                        //   // if (surveyController.questions[index]['label'] ==
+                        //   //     "Weekly_Sales") {
+                        //   // if (index == 1){
+                        //     if (weeklySales < dailySales) {
+                        //       return "Weekly sales should not be less than Daily sales.";
+                        //     }
+                        //   //}
+                        //
+                        //   // if (surveyController.questions[index]['label'] ==
+                        //   //     "Peak_Sales") {
+                        //   // if (index == 3){
+                        //     if (peakSales < dailySales) {
+                        //       return "Peak Monthly sales should not be less than Daily sales.";
+                        //     }
+                        //     if (annualSales < weeklySales) {
+                        //       return "Peak Monthly sales should not be less than Weekly sales.";
+                        //     }
+                        //     if (annualSales < monthlySales) {
+                        //       return "Peak Monthly sales should not be less than Average Monthly sales.";
+                        //     }
+                        //   // }
+                        //
+                        //   // if (surveyController.questions[index]['label'] ==
+                        //   //     "Annual_Sales_1") {
+                        //   // if (index == 7){
+                        //     if (annualSales < dailySales) {
+                        //       return "Annual sales should not be less than Daily sales.";
+                        //     }
+                        //     if (annualSales < weeklySales) {
+                        //       return "Annual sales should not be less than Weekly sales.";
+                        //     }
+                        //     if (annualSales < monthlySales) {
+                        //       return "Annual sales should not be less than Monthly sales.";
+                        //     }
+                        //   //}
+                        //
+                        //   ///Peak and Average Sales
+                        //
+                        //   return null;
+                        // },
+                          validator: (value) {
+                            final SurveyController surveyController = Get.find<SurveyController>();
+
+                            try {
+                              if (value == null || value.isEmpty) {
+                                if (!surveyController.isSnackbarShown.value) {
+                                  surveyController.isSnackbarShown.value = true;
+                                  Get.snackbar('Error', 'Please enter an answer');
+                                }
+                                return '';
+                              }
+
+                              double monthlySales = double.tryParse(answerControllers[surveyController.questions
+                                  .indexWhere((q) => q['label'] == "Monthly_Sales")]
+                                  .text) ?? 0.0;
+                              double weeklySales = double.tryParse(answerControllers[surveyController.questions
+                                  .indexWhere((q) => q['label'] == "Weekly_Sales")]
+                                  .text) ?? 0.0;
+                              double dailySales = double.tryParse(answerControllers[surveyController.questions
+                                  .indexWhere((q) => q['label'] == "Daily_Sales")]
+                                  .text) ?? 0.0;
+                              double peakSales = double.tryParse(answerControllers[surveyController.questions
+                                  .indexWhere((q) => q['label'] == "Peak_Sales")]
+                                  .text) ?? 0.0;
+                              double annualSales = double.tryParse(answerControllers[surveyController.questions
+                                  .indexWhere((q) => q['label'] == "Annual_Sales_1")]
+                                  .text) ?? 0.0;
+
+                              String errorMessage = '';
+
+                              if (monthlySales < weeklySales) {
+                                errorMessage = "Monthly sales should not be less than weekly sales.";
+                              } else if (monthlySales < dailySales) {
+                                errorMessage = "Monthly sales should not be less than daily sales.";
+                              } else if (weeklySales < dailySales) {
+                                errorMessage = "Weekly sales should not be less than Daily sales.";
+                              } else if (peakSales < dailySales) {
+                                errorMessage = "Peak Monthly sales should not be less than Daily sales.";
+                              } else if (annualSales < weeklySales) {
+                                errorMessage = "Annual Sales should not be less than Weekly sales.";
+                              } else if (annualSales < monthlySales) {
+                                errorMessage = "Annual sales should not be less than Average Monthly sales.";
+                              } else if (annualSales < dailySales) {
+                                errorMessage = "Annual sales should not be less than Daily sales.";
+                              } else if (annualSales < weeklySales) {
+                                errorMessage = "Annual sales should not be less than Weekly sales.";
+                              } else if (annualSales < monthlySales) {
+                                errorMessage = "Annual sales should not be less than Monthly sales.";
+                              }
+
+                              if (errorMessage.isNotEmpty) {
+                                if (!surveyController.isSnackbarShown.value) {
+                                  surveyController.isSnackbarShown.value = true;
+                                  Get.snackbar('Error', errorMessage);
+                                }
+                                return '';
+                              }
+
+                              return null;
+                            } catch (e) {
+                              if (!surveyController.isSnackbarShown.value) {
+                                surveyController.isSnackbarShown.value = true;
+                                Get.snackbar('Error', 'An unexpected error occurred: ${e.toString()}');
+                              }
+                              return '';
+                            }
                           }
 
-                          double monthlySales = getValueFromField("Monthly_Sales");
-                          double weeklySales = getValueFromField("Weekly_Sales");
-                          double dailySales = getValueFromField("Daily_Sales");
-                          double peakSales = getValueFromField("Peak_Sales");
-                          double annualSales = getValueFromField("Annual_Sales_1");
-
-
-                          /// Monthly Field - Less than Daily and Weekly
-                          // if (surveyController.questions[index]['label'] == "Monthly_Sales") {
-                          //
-                          //   if (monthlySales < weeklySales) {
-                          //     return "Monthly sales should not be less than weekly sales.";
-                          //   }
-                          //   if (monthlySales < dailySales) {
-                          //     return "Monthly sales should not be less than daily sales.";
-                          //   }
-                          // }
-
-                          /// Weekly Field - Less than Daily
-
-                          ///Peak and Average Sales
-
-                          return null;
-                        },
                       ),
                       const SizedBox(height: 20),
                     ],
@@ -209,6 +318,7 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
           onPressed: () async {
+            surveyController.isSnackbarShown.value = false;
             if (_formKey.currentState?.validate() ?? false) {
               // No need to check _isSaved when saving updated responses
               bool isConnected = await isConnectedToInternet();
@@ -273,7 +383,9 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
 
               Get.to(() => BusinessFinancialCogsScreen(userId: widget.userId));
             } else {
-              Get.snackbar('Error', 'Please answer all questions.');
+              if (!surveyController.isSnackbarShown.value) {
+                Get.snackbar('Error', 'Please answer all questions.');
+              }
             }
           },
           child: const Text('Next'),
