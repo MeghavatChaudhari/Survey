@@ -13,6 +13,10 @@ class SurveyController extends GetxController {
   var isLoading = false.obs;
   var isConnected = false.obs;
   final RxBool isSnackbarShown = false.obs;
+  final RxBool isCOGSScreenSnackbarShown = false.obs;
+  final RxBool isOperatingScreenSnackbarShown = false.obs;
+  final RxBool isPersonalCostSnackbarShown = false.obs;
+  final RxBool isBusinessNonFinancialSnackbarShown = false.obs;
 
 
   @override

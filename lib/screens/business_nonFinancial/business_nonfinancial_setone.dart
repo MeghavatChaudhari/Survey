@@ -219,56 +219,49 @@ class _BusinessNonfinancialSetoneState
                                             child: Icon(Icons.location_on))
                                         : Icon(Icons.question_answer),
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter an answer';
-                                }
-                                String label = question['label'];
-                                if (label == "Total_Inventory") {
-                                  double shopValue = double.tryParse(
-                                          answerControllers
-                                              .firstWhere(
-                                                  (controller) =>
-                                                      surveyController
-                                                                  .questions[
-                                                              answerControllers
-                                                                  .indexOf(
-                                                                      controller)]
-                                                          ['label'] ==
-                                                      "Inventory_Shop",
-                                                  orElse: () =>
-                                                      TextEditingController(
-                                                          text: "0"))
-                                              .text) ??
-                                      0.0;
+                          validator: (value) {
+                            final SurveyController surveyController = Get.find<SurveyController>();
 
-                                  double warehouseValue = double.tryParse(
-                                          answerControllers
-                                              .firstWhere(
-                                                  (controller) =>
-                                                      surveyController
-                                                                  .questions[
-                                                              answerControllers
-                                                                  .indexOf(
-                                                                      controller)]
-                                                          ['label'] ==
-                                                      "Inventory_Warehouse",
-                                                  orElse: () =>
-                                                      TextEditingController(
-                                                          text: "0"))
-                                              .text) ??
-                                      0.0;
+                            try {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter an answer';
+                              }
 
-                                  double totalValue =
-                                      double.tryParse(value) ?? 0.0;
+                              String label = question['label'];
+                              if (label == "Total_Inventory") {
+                                double shopValue = double.tryParse(
+                                    answerControllers.firstWhere(
+                                            (controller) => surveyController.questions[answerControllers.indexOf(controller)]['label'] == "Inventory_Shop",
+                                        orElse: () => TextEditingController(text: "0")
+                                    ).text
+                                ) ?? 0.0;
 
-                                  if (totalValue !=
-                                      shopValue + warehouseValue) {
-                                    return "Total must equal Shop and Warehouse values";
+                                double warehouseValue = double.tryParse(
+                                    answerControllers.firstWhere(
+                                            (controller) => surveyController.questions[answerControllers.indexOf(controller)]['label'] == "Inventory_Warehouse",
+                                        orElse: () => TextEditingController(text: "0")
+                                    ).text
+                                ) ?? 0.0;
+
+                                double totalValue = double.tryParse(value) ?? 0.0;
+
+                                if (totalValue != shopValue + warehouseValue) {
+                                  if (!surveyController.isBusinessNonFinancialSnackbarShown.value) {
+                                    surveyController.isBusinessNonFinancialSnackbarShown.value = true;
+                                    Get.snackbar('Error', "Total must Equal Shop and Warehouse values");
                                   }
+                                  return "";
                                 }
-                                return null;
-                              },
+                              }
+                              return null;
+                            } catch (e) {
+                              if (!surveyController.isBusinessNonFinancialSnackbarShown.value) {
+                                surveyController.isBusinessNonFinancialSnackbarShown.value = true;
+                                Get.snackbar('Error', 'An error occurred: ${e.toString()}');
+                              }
+                              return '';
+                            }
+                          },
                               onChanged: (value) {
                                 setState(() {
                                   _isSaved = false;
@@ -288,6 +281,7 @@ class _BusinessNonfinancialSetoneState
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
           onPressed: () async {
+            surveyController.isBusinessNonFinancialSnackbarShown.value = false;
             if (_formKey.currentState?.validate() ?? false) {
               if (_isSaved) {
                 Get.snackbar('Info', 'Data has already been saved.');
@@ -350,7 +344,9 @@ class _BusinessNonfinancialSetoneState
 
               Get.to(() => HouseholdScreen(userId: widget.userId));
             } else {
-              Get.snackbar('Error', 'Please answer all questions.');
+              if (!surveyController.isBusinessNonFinancialSnackbarShown.value) {
+                Get.snackbar('Error', 'Please answer all questions.');
+              }
             }
           },
           child: const Text('Next'),

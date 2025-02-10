@@ -184,12 +184,55 @@ class _BusinessFinancialCogsScreenState
                           labelText: 'Your answer',
                           prefixIcon: Icon(Icons.question_answer),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter an answer';
-                          }
-                          return null;
-                        },
+                          validator: (value) {
+                            final SurveyController surveyController = Get.find<SurveyController>();
+
+                            try {
+                              if (value == null || value.isEmpty) {
+                                if (!surveyController.isCOGSScreenSnackbarShown.value) {
+                                  surveyController.isCOGSScreenSnackbarShown.value = true;
+                                  Get.snackbar('Error', 'Please enter an answer');
+                                }
+                                return '';
+                              }
+
+                              double totalPurchase = double.tryParse(answerControllers[surveyController.questions
+                                  .indexWhere((q) => q['label'] == "Total_Purchase")]
+                                  .text) ?? 0.0;
+                              double weeklyPurchases = double.tryParse(answerControllers[surveyController.questions
+                                  .indexWhere((q) => q['label'] == "Weekly_Purchase")]
+                                  .text) ?? 0.0;
+                              double dailyPurchases = double.tryParse(answerControllers[surveyController.questions
+                                  .indexWhere((q) => q['label'] == "Daily_Purchase")]
+                                  .text) ?? 0.0;
+
+                              String errorMessage = '';
+
+                              if (totalPurchase < weeklyPurchases) {
+                                errorMessage = "Total Purchase should not be less than weekly purchases.";
+                              } else if (totalPurchase < dailyPurchases) {
+                                errorMessage = "Total Purchase should not be less than daily purchases.";
+                              } else if (weeklyPurchases< dailyPurchases) {
+                                errorMessage = "Weekly Purchases should not be less than Daily purchases.";
+                              }
+
+                              if (errorMessage.isNotEmpty) {
+                                if (!surveyController.isCOGSScreenSnackbarShown.value) {
+                                  surveyController.isCOGSScreenSnackbarShown.value = true;
+                                  Get.snackbar('Error', errorMessage);
+                                }
+                                return '';
+                              }
+
+                              return null;
+                            } catch (e) {
+                              if (!surveyController.isCOGSScreenSnackbarShown.value) {
+                                surveyController.isCOGSScreenSnackbarShown.value = true;
+                                Get.snackbar('Error', 'An unexpected error occurred: ${e.toString()}');
+                              }
+                              return '';
+                            }
+                          },
                         onChanged: (value) {
                           setState(() {
                             _isSaved = false; // Reset the save flag on any edit
@@ -210,6 +253,7 @@ class _BusinessFinancialCogsScreenState
         child: ElevatedButton(
           onPressed: () async {
             if (_formKey.currentState?.validate() ?? false) {
+              surveyController.isCOGSScreenSnackbarShown.value = false;
               if (_isSaved) {
                 Get.snackbar('Info', 'Data has already been saved.');
                 return;
@@ -272,7 +316,10 @@ class _BusinessFinancialCogsScreenState
               Get.to(
                   () => BusinessFinancialOperatingcost(userId: widget.userId));
             } else {
-              Get.snackbar('Error', 'Please answer all questions.');
+              if (!surveyController.isCOGSScreenSnackbarShown.value) {
+                Get.snackbar('Error', 'Please answer all questions.');
+              }
+
             }
           },
           child: const Text('Next'),

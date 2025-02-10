@@ -182,28 +182,41 @@ class _BusinessFinancialPersonalcostState
                           labelText: 'Your answer',
                           prefixIcon: Icon(Icons.question_answer),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter an answer';
-                          }
+                          validator: (value) {
+                            final SurveyController surveyController = Get.find<SurveyController>();
 
-                          if (index != answerControllers.length - 1){
-                            double individualSum = 0;
-                            for (int i = 1; i < answerControllers.length - 1; i++) {
-                              individualSum += double.parse(answerControllers[i].text);
+                            try {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter an answer';
+                              }
+
+                              if (index != answerControllers.length - 1){
+                                double individualSum = 0;
+                                for (int i = 1; i < answerControllers.length - 1; i++) {
+                                  individualSum += double.parse(answerControllers[i].text);
+                                }
+                                print(individualSum);
+                                final double lowerLimit = double.parse(answerControllers[0].text) * 0.85;
+                                final double upperLimit = double.parse(answerControllers[0].text) * 1.15;
+
+                                if (individualSum < lowerLimit || individualSum > upperLimit) {
+                                  if (!surveyController.isPersonalCostSnackbarShown.value) {
+                                    surveyController.isPersonalCostSnackbarShown.value = true;
+                                    Get.snackbar('Error', "Total exceeds expected cost range");
+                                  }
+                                  return "";
+                                }
+                              }
+
+                              return null;
+                            } catch (e) {
+                              if (!surveyController.isPersonalCostSnackbarShown.value) {
+                                surveyController.isPersonalCostSnackbarShown.value = true;
+                                Get.snackbar('Error', 'An error occurred: ${e.toString()}');
+                              }
+                              return '';
                             }
-                            print(individualSum);
-                            final double lowerLimit = double.parse(answerControllers[0].text) * 0.85;
-                            final double upperLimit = double.parse(answerControllers[0].text) * 1.15;
-
-                            if (individualSum < lowerLimit || individualSum > upperLimit) {
-
-                              return "Total exceeds expected cost range";
-                            }
-                          }
-
-                          return null;
-                        },
+                          },
                         onChanged: (value) {
                           setState(() {
                             _isSaved = false; // Reset the save flag on any edit
@@ -223,6 +236,7 @@ class _BusinessFinancialPersonalcostState
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
           onPressed: () async {
+            surveyController.isPersonalCostSnackbarShown.value = false;
             if (_formKey.currentState?.validate() ?? false) {
               if (_isSaved) {
                 Get.snackbar('Info', 'Data has already been saved.');
@@ -284,7 +298,10 @@ class _BusinessFinancialPersonalcostState
               // Navigate to the next screen or show a success message
               Get.to(() => BusinessNonfinancialSetone(userId: widget.userId));
             } else {
-              Get.snackbar('Error', 'Please answer all questions.');
+              if (!surveyController.isPersonalCostSnackbarShown.value) {
+                Get.snackbar('Error', 'Please answer all questions.');
+              }
+
             }
           },
           child: const Text('Next'),
