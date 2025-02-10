@@ -44,7 +44,7 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
       setState(() {
         focusNodes = List.generate(
           questions.length,
-              (index) => FocusNode(),
+          (index) => FocusNode(),
         );
       });
     });
@@ -147,15 +147,18 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
                       TextFormField(
                         controller: answerControllers[index],
                         keyboardType: keyboardType,
-                        textInputAction: index == surveyController.questions.length - 1
-                            ? TextInputAction.done
-                            : TextInputAction.next,
+                        textInputAction:
+                            index == surveyController.questions.length - 1
+                                ? TextInputAction.done
+                                : TextInputAction.next,
                         focusNode: focusNodes[index],
                         onFieldSubmitted: (_) {
                           if (index < surveyController.questions.length - 1) {
-                            FocusScope.of(context).requestFocus(focusNodes[index + 1]);
+                            FocusScope.of(context)
+                                .requestFocus(focusNodes[index + 1]);
                           } else {
-                            FocusScope.of(context).unfocus(); // Close the keyboard if it's the last field
+                            FocusScope.of(context)
+                                .unfocus(); // Close the keyboard if it's the last field
                           }
                         },
                         decoration: const InputDecoration(
@@ -167,6 +170,29 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter an answer';
                           }
+
+                          double monthlySales = getValueFromField("Monthly_Sales");
+                          double weeklySales = getValueFromField("Weekly_Sales");
+                          double dailySales = getValueFromField("Daily_Sales");
+                          double peakSales = getValueFromField("Peak_Sales");
+                          double annualSales = getValueFromField("Annual_Sales_1");
+
+
+                          /// Monthly Field - Less than Daily and Weekly
+                          // if (surveyController.questions[index]['label'] == "Monthly_Sales") {
+                          //
+                          //   if (monthlySales < weeklySales) {
+                          //     return "Monthly sales should not be less than weekly sales.";
+                          //   }
+                          //   if (monthlySales < dailySales) {
+                          //     return "Monthly sales should not be less than daily sales.";
+                          //   }
+                          // }
+
+                          /// Weekly Field - Less than Daily
+
+                          ///Peak and Average Sales
+
                           return null;
                         },
                       ),
@@ -198,7 +224,7 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
                     'answer': answer,
                   });
                   accessResponses.checkAndInsertValues({
-                    question['label'] : double.parse(answer),
+                    question['label']: double.parse(answer),
                   });
                 }
               }
@@ -245,7 +271,6 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
               print('global');
               print(accessResponses.allAnswers);
 
-
               Get.to(() => BusinessFinancialCogsScreen(userId: widget.userId));
             } else {
               Get.snackbar('Error', 'Please answer all questions.');
@@ -255,5 +280,17 @@ class _BusinessFinancialScreenState extends State<BusinessFinancialScreen> {
         ),
       ),
     );
+  }
+
+  double getValueFromField(String labelText) {
+    final SurveyController surveyController = Get.find<SurveyController>();
+
+    double value = double.tryParse(answerControllers[surveyController.questions
+                .indexWhere((q) => q['label'] == labelText)]
+            .text) ??
+        0.0;
+
+    print("Warehouse Value: $value");
+    return value;
   }
 }
