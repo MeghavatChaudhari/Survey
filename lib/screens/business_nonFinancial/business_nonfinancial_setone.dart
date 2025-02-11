@@ -9,6 +9,7 @@ import 'package:survey/cache/users_response.dart';
 import 'package:survey/screens/business_nonFinancial/business_nonfinancial_settwo.dart';
 import 'package:survey/screens/business_financial/business_financial_personalcost.dart';
 import 'package:survey/screens/household_nonfinancial/household_screen.dart';
+import 'package:http/http.dart' as http;
 
 class BusinessNonfinancialSetone extends StatefulWidget {
   final String userId;
@@ -29,6 +30,7 @@ class _BusinessNonfinancialSetoneState
   List<FocusNode> focusNodes = [];
   AccessResponses accessResponses = AccessResponses();
   Map<int, String?> dropdownValues = {};
+  String deviceLocation = 'Click to track Location';
 
   @override
   void initState() {
@@ -159,115 +161,167 @@ class _BusinessNonfinancialSetoneState
                         ),
                       ),
                       const SizedBox(height: 20),
-                      question['keyboardType'] == "dropdown"
-                          ? DropdownButtonFormField<String>(
-                              value: dropdownValues[question['id']],
-                              decoration: const InputDecoration(
-                                border: OutlineInputBorder(),
-                                labelText: 'Your answer',
-                                prefixIcon: Icon(Icons.question_answer),
+                      question['keyboardType'] == "location"
+                          ? GestureDetector(
+                              onTap: () {
+                                getLatLongInDegrees();
+                              },
+                              child: Container(
+                                height: 50,
+                                width: MediaQuery.sizeOf(context).width * 0.85,
+                                decoration: BoxDecoration(
+                                    border: Border.all(
+                                        color: Colors.black.withOpacity(0.5)),
+                                    borderRadius: BorderRadius.circular(4)),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 6),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.location_on,
+                                        color: Colors.black.withOpacity(0.7),
+                                      ),
+                                      const SizedBox(width: 12,),
+                                      Text(deviceLocation,style: TextStyle(color: Colors.black.withOpacity(0.8),fontSize: 16),)
+                                    ],
+                                  ),
+                                ),
                               ),
-                              hint: const Text("Select an option"),
-                              items: (question['options'] as List<dynamic>)
-                                  .map((dynamic value) => value.toString())
-                                  .toList()
-                                  .map((String value) {
-                                return DropdownMenuItem<String>(
-                                  value: value,
-                                  child: Text(value),
-                                );
-                              }).toList(),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please select an option';
-                                }
-                                return null;
-                              },
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  dropdownValues[question['id']] = newValue;
-                                });
-                              },
                             )
-                          : TextFormField(
-                              controller: answerControllers[index],
-                              keyboardType: keyboardType,
-                              textInputAction:
-                                  index == surveyController.questions.length - 1
+                          : question['keyboardType'] == "dropdown"
+                              ? DropdownButtonFormField<String>(
+                                  value: dropdownValues[question['id']],
+                                  decoration: const InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    labelText: 'Your answer',
+                                    prefixIcon: Icon(Icons.question_answer),
+                                  ),
+                                  hint: const Text("Select an option"),
+                                  items: (question['options'] as List<dynamic>)
+                                      .map((dynamic value) => value.toString())
+                                      .toList()
+                                      .map((String value) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    );
+                                  }).toList(),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please select an option';
+                                    }
+                                    return null;
+                                  },
+                                  onChanged: (String? newValue) {
+                                    setState(() {
+                                      dropdownValues[question['id']] = newValue;
+                                    });
+                                  },
+                                )
+                              : TextFormField(
+                                  controller: answerControllers[index],
+                                  keyboardType: keyboardType,
+                                  textInputAction: index ==
+                                          surveyController.questions.length - 1
                                       ? TextInputAction.done
                                       : TextInputAction.next,
-                              focusNode: focusNodes[index],
-                              onFieldSubmitted: (_) {
-                                if (index <
-                                    surveyController.questions.length - 1) {
-                                  FocusScope.of(context)
-                                      .requestFocus(focusNodes[index + 1]);
-                                } else {
-                                  FocusScope.of(context)
-                                      .unfocus(); // Close the keyboard if it's the last field
-                                }
-                              },
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(),
-                                labelText: 'Your answer',
-                                prefixIcon:
-                                    question['keyboardType'] == "location"
-                                        ? GestureDetector(
-                                            onTap: () {
-                                              //_getCurrentLocation(index);
-                                            },
-                                            child: Icon(Icons.location_on))
-                                        : Icon(Icons.question_answer),
-                              ),
-                          validator: (value) {
-                            final SurveyController surveyController = Get.find<SurveyController>();
+                                  focusNode: focusNodes[index],
+                                  onFieldSubmitted: (_) {
+                                    if (index <
+                                        surveyController.questions.length - 1) {
+                                      FocusScope.of(context)
+                                          .requestFocus(focusNodes[index + 1]);
+                                    } else {
+                                      FocusScope.of(context)
+                                          .unfocus(); // Close the keyboard if it's the last field
+                                    }
+                                  },
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    labelText: 'Your answer',
+                                    prefixIcon: Icon(Icons.question_answer),
+                                  ),
+                                  validator: (value) {
+                                    final SurveyController surveyController =
+                                        Get.find<SurveyController>();
 
-                            try {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter an answer';
-                              }
+                                    try {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Please enter an answer';
+                                      }
 
-                              String label = question['label'];
-                              if (label == "Total_Inventory") {
-                                double shopValue = double.tryParse(
-                                    answerControllers.firstWhere(
-                                            (controller) => surveyController.questions[answerControllers.indexOf(controller)]['label'] == "Inventory_Shop",
-                                        orElse: () => TextEditingController(text: "0")
-                                    ).text
-                                ) ?? 0.0;
+                                      String label = question['label'];
+                                      if (label == "Total_Inventory") {
+                                        double shopValue = double.tryParse(answerControllers
+                                                .firstWhere(
+                                                    (controller) =>
+                                                        surveyController
+                                                                    .questions[
+                                                                answerControllers
+                                                                    .indexOf(
+                                                                        controller)]
+                                                            ['label'] ==
+                                                        "Inventory_Shop",
+                                                    orElse: () =>
+                                                        TextEditingController(
+                                                            text: "0"))
+                                                .text) ??
+                                            0.0;
 
-                                double warehouseValue = double.tryParse(
-                                    answerControllers.firstWhere(
-                                            (controller) => surveyController.questions[answerControllers.indexOf(controller)]['label'] == "Inventory_Warehouse",
-                                        orElse: () => TextEditingController(text: "0")
-                                    ).text
-                                ) ?? 0.0;
+                                        double warehouseValue = double.tryParse(
+                                                answerControllers
+                                                    .firstWhere(
+                                                        (controller) =>
+                                                            surveyController
+                                                                        .questions[
+                                                                    answerControllers
+                                                                        .indexOf(
+                                                                            controller)]
+                                                                ['label'] ==
+                                                            "Inventory_Warehouse",
+                                                        orElse: () =>
+                                                            TextEditingController(
+                                                                text: "0"))
+                                                    .text) ??
+                                            0.0;
 
-                                double totalValue = double.tryParse(value) ?? 0.0;
+                                        double totalValue =
+                                            double.tryParse(value) ?? 0.0;
 
-                                if (totalValue != shopValue + warehouseValue) {
-                                  if (!surveyController.isBusinessNonFinancialSnackbarShown.value) {
-                                    surveyController.isBusinessNonFinancialSnackbarShown.value = true;
-                                    Get.snackbar('Error', "Total must Equal Shop and Warehouse values");
-                                  }
-                                  return "";
-                                }
-                              }
-                              return null;
-                            } catch (e) {
-                              if (!surveyController.isBusinessNonFinancialSnackbarShown.value) {
-                                surveyController.isBusinessNonFinancialSnackbarShown.value = true;
-                                Get.snackbar('Error', 'An error occurred: ${e.toString()}');
-                              }
-                              return '';
-                            }
-                          },
-                              onChanged: (value) {
-                                setState(() {
-                                  _isSaved = false;
-                                });
-                              },
-                            ),
+                                        if (totalValue !=
+                                            shopValue + warehouseValue) {
+                                          if (!surveyController
+                                              .isBusinessNonFinancialSnackbarShown
+                                              .value) {
+                                            surveyController
+                                                .isBusinessNonFinancialSnackbarShown
+                                                .value = true;
+                                            Get.snackbar('Error',
+                                                "Total must Equal Shop and Warehouse values");
+                                          }
+                                          return "";
+                                        }
+                                      }
+                                      return null;
+                                    } catch (e) {
+                                      if (!surveyController
+                                          .isBusinessNonFinancialSnackbarShown
+                                          .value) {
+                                        surveyController
+                                            .isBusinessNonFinancialSnackbarShown
+                                            .value = true;
+                                        Get.snackbar('Error',
+                                            'An error occurred: ${e.toString()}');
+                                      }
+                                      return '';
+                                    }
+                                  },
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _isSaved = false;
+                                    });
+                                  },
+                                ),
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -296,7 +350,7 @@ class _BusinessNonfinancialSetoneState
                 String answer = answerControllers[i].text;
 
                 if (answer.isNotEmpty) {
-                  if(question['keyboardType'] != "dropdown"){
+                  if (question['keyboardType'] != "dropdown" || question['keyboardType'] != "location") {
                     responses.add({
                       'question': question['text'],
                       'answer': answer,
@@ -354,4 +408,46 @@ class _BusinessNonfinancialSetoneState
       ),
     );
   }
+
+  Future<void> getLatLongInDegrees() async {
+    try {
+      // Step 1: Get Public IP Address
+      var ipRes = await http.get(Uri.parse("https://api64.ipify.org?format=json"));
+      if (ipRes.statusCode != 200) {
+        print("Failed to get public IP");
+        return;
+      }
+      String ipAddress = json.decode(ipRes.body)['ip'];
+
+      // Step 2: Get Geo Location (Latitude & Longitude)
+      var geoRes = await http.get(Uri.parse(
+          "https://api.ipgeolocation.io/ipgeo?apiKey=2f058980b09849ac9e9b15b9b744575e&ip=$ipAddress"));
+
+      if (geoRes.statusCode == 200) {
+        var data = json.decode(geoRes.body);
+
+        // Extract latitude & longitude
+        double latitude = double.parse(data['latitude'].toString());
+        double longitude = double.parse(data['longitude'].toString());
+
+        // Convert to degrees format
+        String latDirection = latitude >= 0 ? "N" : "S";
+        String lonDirection = longitude >= 0 ? "E" : "W";
+
+        String formattedLat = "${latitude.abs().toStringAsFixed(6)}° $latDirection";
+        String formattedLon = "${longitude.abs().toStringAsFixed(6)}° $lonDirection";
+
+        setState(() {
+          deviceLocation = "$formattedLat , $formattedLon";
+        });
+
+        print("Latitude: $formattedLat, Longitude: $formattedLon");
+      } else {
+        print("Failed to fetch geolocation data.");
+      }
+    } catch (e) {
+      print("Error: ${e.toString()}");
+    }
+  }
+
 }
