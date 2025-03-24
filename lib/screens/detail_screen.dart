@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:random_string/random_string.dart';
+import 'package:survey/csv_export/firestore_csv_exporter.dart';
 import 'package:survey/db_services/save_user.dart';
 import 'package:survey/screens/business_financial/business_financial_screen.dart';
 import '../global_functions//checkConnectivity.dart';
@@ -14,6 +15,8 @@ class DetailScreen extends StatelessWidget {
   final _formKey = GlobalKey<FormState>();
   final DatabaseService _databaseService = DatabaseService();
   final UserCacheService _userCacheService = UserCacheService();
+  final FirestoreCsvExport exporter = FirestoreCsvExport();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,8 +52,7 @@ class DetailScreen extends StatelessWidget {
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
-                const SizedBox(height: 30),
+                const SizedBox(height: 50),
                 CustomButton(
                   label: "Next",
                   onPressed: () async {
@@ -79,6 +81,14 @@ class DetailScreen extends StatelessWidget {
 
                       Get.to(() => BusinessFinancialScreen(userId: id));
                     }
+                  },
+                ),
+                const SizedBox(height: 30),
+                CustomButton(
+                  label: "Export",
+                  onPressed: () async {
+                    await exporter.exportFirestoreToCSV("users", "output.csv");
+
                   },
                 ),
               ],
